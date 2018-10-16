@@ -1,33 +1,61 @@
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+
+import static java.lang.Math.log;
 
 public class Main {
     public static void main(String[] args) {
-        String a = "ACGTN";
-        String b = "TGCAA";
+        String s1 = "ACGTN";
+        String s2 = "TGCAA";
 
-        String[] DNAs = new String[2];
-        DNAs[0] = a;
-        DNAs[1] = b;
+        int A=0,C=1,G=2,T=3;
 
-        int A = 0; int C = 1; int G = 2; int T = 3;
+        Map<Character, Integer> nucl = new HashMap<>();
+        nucl.put('A', A);
+        nucl.put('C', C);
+        nucl.put('G', G);
+        nucl.put('T', T);
 
-        int[][] nucl_counts = new int[DNAs.length][4];
-        int[] unumbig_nucl_counts = new int[DNAs.length];
-        List<List<List<Integer>>> nucl_groups = new ArrayList<>(DNAs.length);
-
-        for(int i=0; i!=DNAs.length; ++i) {
-            nucl_groups.add(new ArrayList<List<Integer>>(4));
-            for(int j=0; j!=4; ++j) nucl_groups.get(i).add(new ArrayList<Integer>());
-            for(int j=0; j!=DNAs[i].length(); ++j) {
-                char c = DNAs[i].charAt(j);
-                if (c == 'A')      {++nucl_counts[i][A]; nucl_groups.get(i).get(A).add(j);}
-                else if (c == 'C') {++nucl_counts[i][C]; nucl_groups.get(i).get(C).add(j);}
-                else if (c == 'G') {++nucl_counts[i][G]; nucl_groups.get(i).get(G).add(j);}
-                else if (c == 'T') {++nucl_counts[i][T]; nucl_groups.get(i).get(T).add(j);}
-                else continue;
-                ++unumbig_nucl_counts[i];
-            }
+        List<Integer> s1_enc = new LinkedList<>();
+        List<Integer> s2_enc = new LinkedList<>();
+        for(int i=0; i<s1.length(); ++i) {
+            char c1 = s1.charAt(i);
+            char c2 = s2.charAt(i);
+            if(!(nucl.containsKey(c1) && nucl.containsKey(c2))) continue;
+            s1_enc.add(nucl.get(c1));
+            s2_enc.add(nucl.get(c2));
         }
+
+        int n = 0;
+        int[] nucl_counts = new int[4];
+        int[][] nucl_pair_count = new int[4][4];
+
+        for(int i=0; i<s1_enc.size(); ++i) {
+            int c1 = s1_enc.get(i);
+            int c2 = s2_enc.get(i);
+            ++nucl_counts[c1];
+            ++nucl_counts[c2];
+            ++nucl_pair_count[c1][c2];
+            ++nucl_pair_count[c2][c1];
+            ++n;
+        }
+        double[] nucl_freq = new double[4];
+        for(int i=0; i<4; ++i) nucl_freq[i] = (double) nucl_counts[i]/2/n;
+        double p1 = (double) nucl_pair_count[A][G]/n;
+        double p2 = (double) nucl_pair_count[C][T]/n;
+        double q = ((double) nucl_pair_count[A][C]+nucl_pair_count[A][T]+nucl_pair_count[C][G]+
+                             nucl_pair_count[C][T]+nucl_pair_count[G][T])/n;
+        double g_r = nucl_freq[A]+nucl_freq[G];
+        double g_y = nucl_freq[A]+nucl_freq[G];
+        double k_ag = 2*nucl_freq[A]*nucl_freq[G]/g_r;
+        double k_tc = 2*nucl_freq[T]*nucl_freq[C]/g_y;
+        double k_ry = 2*g_r*g_y;
+
+        double d = -k_ag*log(1-p1/k_ag-q/(2*g_r))
+               -k_tc*log(1-p2/k_tc-q/(2*g_y))
+               -(k_ry-k_ag*g_y-k_tc*g_r)*log(1-q/k_ry);
+        System.out.println(q/k_ry);
     }
 }
