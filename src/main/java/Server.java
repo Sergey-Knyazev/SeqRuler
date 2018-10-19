@@ -4,7 +4,8 @@ import java.io.IOException;
 
 @ServerEndpoint("/")
 public class Server {
-    public Server(){System.out.println("class loaded " + this.getClass());
+    public Server(){
+        System.out.println("class loaded " + this.getClass());
     }
 
     @OnOpen
