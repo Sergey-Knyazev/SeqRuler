@@ -1,61 +1,132 @@
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import picocli.CommandLine;
 
-import static java.lang.Math.log;
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.File;
 
-public class Main {
+import static javax.swing.JOptionPane.showMessageDialog;
+
+@CommandLine.Command(name = "tn93", mixinStandardHelpOptions = true, version = "0.1")
+public class Main implements Runnable{
+    @CommandLine.Option(names={"-i", "--inFile"}, description="input file with sequences",
+            paramLabel = "FILE")
+    private File inputFile;
+    @CommandLine.Option(names={"-o", "--outFile"},
+            description="output file with distances",
+            paramLabel = "FILE")
+    private File outputFile;
+    @CommandLine.Option(names={"-s", "--server"}, description="run jetty server")
+    private boolean is_server;
+
+    public void run() {
+        if(is_server) {
+            try {
+                run_server();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        if(inputFile == null || outputFile == null) {
+            javax.swing.SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    createAndShowGUI();
+                }
+            });
+        }
+        else TN93.tn93Fasta(inputFile, outputFile);
+    }
+    private static void run_server() throws InterruptedException {
+        System.out.println("To stop the server press Ctrl-C");
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                System.out.println("Stopping the server...");
+            }
+        });
+        //TODO: Run Server
+        while(true) Thread.sleep(1000);
+    }
+
     public static void main(String[] args) {
-        String s1 = "ACGTN";
-        String s2 = "TGCAA";
+        CommandLine.run(new Main(), System.out, args);
+    }
 
-        int A=0,C=1,G=2,T=3;
+    private static void createAndShowGUI() {
+        //Create and set up the window.
+        JFrame frame = new JFrame("TN93");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        Map<Character, Integer> nucl = new HashMap<>();
-        nucl.put('A', A);
-        nucl.put('C', C);
-        nucl.put('G', G);
-        nucl.put('T', T);
+        //Create and set up the content pane.
+        Panel panel = new Panel();
+        panel.setOpaque(true); //content panes must be opaque
+        frame.setContentPane(panel);
 
-        List<Integer> s1_enc = new LinkedList<>();
-        List<Integer> s2_enc = new LinkedList<>();
-        for(int i=0; i<s1.length(); ++i) {
-            char c1 = s1.charAt(i);
-            char c2 = s2.charAt(i);
-            if(!(nucl.containsKey(c1) && nucl.containsKey(c2))) continue;
-            s1_enc.add(nucl.get(c1));
-            s2_enc.add(nucl.get(c2));
+        //Display the window.
+        frame.pack();
+        frame.setVisible(true);
+    }
+}
+
+class Seq {
+    String name;
+    String seq;
+    Seq(String name, String seq) {
+        this.name = name;
+        this.seq = seq;
+    }
+}
+
+class Panel extends JPanel implements ActionListener {
+    protected JButton inBut, outBut, runBut;
+
+    private File fastaFile, edgeListFile;
+
+
+    Panel() {
+        inBut = new JButton("Load Fasta");
+        outBut = new JButton("Edge List Out File");
+        runBut = new JButton("Run TN93");
+
+        inBut.setActionCommand("loadFasta");
+        outBut.setActionCommand("specifyEdgeListFile");
+        runBut.setActionCommand("runTN93");
+
+        inBut.addActionListener(this);
+        outBut.addActionListener(this);
+        runBut.addActionListener(this);
+
+        add(inBut);
+        add(outBut);
+        add(runBut);
+    }
+
+    public void actionPerformed(ActionEvent e) {
+        if("loadFasta".equals(e.getActionCommand())) {
+            JFileChooser fileopen =  new JFileChooser();
+            if(JFileChooser.APPROVE_OPTION == fileopen.showDialog(null, "Open Fasta file")) {
+                fastaFile = fileopen.getSelectedFile();
+                System.out.println(fastaFile);
+            }
         }
-
-        int n = 0;
-        int[] nucl_counts = new int[4];
-        int[][] nucl_pair_count = new int[4][4];
-
-        for(int i=0; i<s1_enc.size(); ++i) {
-            int c1 = s1_enc.get(i);
-            int c2 = s2_enc.get(i);
-            ++nucl_counts[c1];
-            ++nucl_counts[c2];
-            ++nucl_pair_count[c1][c2];
-            ++nucl_pair_count[c2][c1];
-            ++n;
+        else if("specifyEdgeListFile".equals(e.getActionCommand())) {
+            JFileChooser fileopen =  new JFileChooser();
+            fileopen.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            if(JFileChooser.APPROVE_OPTION == fileopen.showDialog(null, "Specify Edge List File")) {
+                edgeListFile = fileopen.getSelectedFile();
+                System.out.println(edgeListFile);
+            }
         }
-        double[] nucl_freq = new double[4];
-        for(int i=0; i<4; ++i) nucl_freq[i] = (double) nucl_counts[i]/2/n;
-        double p1 = (double) nucl_pair_count[A][G]/n;
-        double p2 = (double) nucl_pair_count[C][T]/n;
-        double q = ((double) nucl_pair_count[A][C]+nucl_pair_count[A][T]+nucl_pair_count[C][G]+
-                             nucl_pair_count[C][T]+nucl_pair_count[G][T])/n;
-        double g_r = nucl_freq[A]+nucl_freq[G];
-        double g_y = nucl_freq[A]+nucl_freq[G];
-        double k_ag = 2*nucl_freq[A]*nucl_freq[G]/g_r;
-        double k_tc = 2*nucl_freq[T]*nucl_freq[C]/g_y;
-        double k_ry = 2*g_r*g_y;
-
-        double d = -k_ag*log(1-p1/k_ag-q/(2*g_r))
-               -k_tc*log(1-p2/k_tc-q/(2*g_y))
-               -(k_ry-k_ag*g_y-k_tc*g_r)*log(1-q/k_ry);
-        System.out.println(q/k_ry);
+        else if("runTN93".equals(e.getActionCommand())) {
+            if(fastaFile == null) {
+                showMessageDialog(null, "Specify a Fasta file!");
+                return;
+            }
+            if(edgeListFile == null) {
+                showMessageDialog(null, "Specify an Edge List file!");
+                return;
+            }
+            TN93.tn93Fasta(fastaFile, edgeListFile);
+        }
     }
 }
