@@ -1,6 +1,7 @@
 import picocli.CommandLine;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -55,12 +56,17 @@ public class Main implements Runnable{
     private static void createAndShowGUI() {
         //Create and set up the window.
         JFrame frame = new JFrame("TN93");
+        JPanel mainPane = new JPanel();
+        mainPane.setLayout(new BoxLayout(mainPane, BoxLayout.Y_AXIS));
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         //Create and set up the content pane.
-        Panel panel = new Panel();
-        panel.setOpaque(true); //content panes must be opaque
-        frame.setContentPane(panel);
+        StatusPanel statusPanel = new StatusPanel();
+        ButtonsPanel buttonsPanel = new ButtonsPanel();
+        mainPane.add(statusPanel);
+        mainPane.add(buttonsPanel);
+        buttonsPanel.setOpaque(true); //content panes must be opaque
+        frame.setContentPane(mainPane);
 
         //Display the window.
         frame.pack();
@@ -77,15 +83,15 @@ class Seq {
     }
 }
 
-class Panel extends JPanel implements ActionListener {
+class ButtonsPanel extends JPanel implements ActionListener {
     protected JButton inBut, outBut, runBut;
 
     private File fastaFile, edgeListFile;
 
 
-    Panel() {
+    ButtonsPanel() {
         inBut = new JButton("Load Fasta");
-        outBut = new JButton("Edge List Out File");
+        outBut = new JButton("Specify Edge CSV");
         runBut = new JButton("Run TN93");
 
         inBut.setActionCommand("loadFasta");
@@ -128,5 +134,14 @@ class Panel extends JPanel implements ActionListener {
             }
             TN93.tn93Fasta(fastaFile, edgeListFile);
         }
+    }
+}
+
+class StatusPanel extends JPanel {
+    protected JTextArea ta;
+
+    StatusPanel() {
+        ta = new JTextArea(10, 40);
+        add(new JScrollPane(ta), BorderLayout.PAGE_START);
     }
 }
