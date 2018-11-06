@@ -1,3 +1,5 @@
+package TN93;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
@@ -6,15 +8,10 @@ import java.util.*;
 import static java.lang.Math.log;
 
 public class TN93 {
-    static void tn93Fasta(File inputFile, File outputFile) {
+    public static void tn93Fasta(File inputFile, File outputFile) {
         try {
             LinkedList<Seq> seqs = read_fasta(inputFile);
-            double[][] dist = new double[seqs.size()][seqs.size()];
-            for (int i = 1; i < dist.length; ++i) {
-                for (int j = 0; j < i; ++j) {
-                    dist[i][j] = dist[j][i] = tn93(seqs.get(i).seq, seqs.get(j).seq);
-                }
-            }
+            double[][] dist = tn93(seqs);
             PrintWriter f = new PrintWriter(outputFile);
             for (int i = 1; i < dist.length; ++i) {
                 for (int j = 0; j < i; ++j) {
@@ -25,6 +22,16 @@ public class TN93 {
         catch(FileNotFoundException e) {
             e.printStackTrace();
         }
+    }
+
+    public static double[][] tn93(LinkedList<Seq> seqs) {
+        double[][] dist = new double[seqs.size()][seqs.size()];
+        for (int i = 1; i < dist.length; ++i) {
+            for (int j = 0; j < i; ++j) {
+                dist[i][j] = dist[j][i] = tn93(seqs.get(i).seq, seqs.get(j).seq);
+            }
+        }
+        return dist;
     }
 
     static double tn93(String s1, String s2) {
@@ -76,9 +83,8 @@ public class TN93 {
                 -(k_ry-k_ag*g_y-k_tc*g_r)*log(1-q/k_ry);
     }
 
-    static LinkedList<Seq> read_fasta(File inputFile) throws FileNotFoundException {
+    public static LinkedList<Seq> read_seqs(Scanner sc) {
         LinkedList<Seq> seqs = new LinkedList<Seq>();
-        Scanner sc = new Scanner(inputFile);
         while(sc.hasNextLine()) {
             String line = sc.nextLine().trim();
             if (line.charAt(0) == '>') {
@@ -89,5 +95,10 @@ public class TN93 {
             }
         }
         return seqs;
+    }
+
+    private static LinkedList<Seq> read_fasta(File inputFile) throws FileNotFoundException {
+        Scanner sc = new Scanner(inputFile);
+        return read_seqs(sc);
     }
 }

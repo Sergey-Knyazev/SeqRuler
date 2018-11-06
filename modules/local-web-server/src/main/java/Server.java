@@ -1,6 +1,10 @@
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.Scanner;
+
+import TN93.*;
 
 @ServerEndpoint("/")
 public class Server {
@@ -23,7 +27,9 @@ public class Server {
         System.out.printf("Message received. Session id: %s Message: %s%n",
                 session.getId(), message);
         try {
-            session.getBasicRemote().sendText(String.format("We received your message: %s%n", message));
+            LinkedList<Seq> seqs = TN93.read_seqs(new Scanner(message));
+            double [][] dist = TN93.tn93(seqs);
+            session.getBasicRemote().sendText(String.format("result: %f%n", dist[0][1]));
         } catch (IOException ex) {
             ex.printStackTrace();
         }

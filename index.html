@@ -2,7 +2,7 @@
 
 <body style="margin: 35px">
 <form>
-    <input id="messageField" type="text">
+    <textarea id="messageField" rows="4" cols="50"></textarea>
     <input onclick="sendMsg();" value="send" type="button">
 </form>
 
@@ -13,6 +13,8 @@
     var webSocket = new WebSocket("ws://localhost:8080/");
     var msgField = document.getElementById("messageField");
     var divMsg = document.getElementById("msg-box");
+    
+    messageField.value='>1\nAACCGGTTTAAA\n>2\nAACCGGTTCAAA';
 
     function sendMsg() {
         var msgToSend = msgField.value;

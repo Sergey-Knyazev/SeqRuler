@@ -1,3 +1,4 @@
+import TN93.TN93;
 import picocli.CommandLine;
 
 import javax.swing.*;
@@ -74,15 +75,6 @@ public class Main implements Runnable{
     }
 }
 
-class Seq {
-    String name;
-    String seq;
-    Seq(String name, String seq) {
-        this.name = name;
-        this.seq = seq;
-    }
-}
-
 class ButtonsPanel extends JPanel implements ActionListener {
     protected JButton inBut, outBut, runBut;
 
@@ -92,7 +84,7 @@ class ButtonsPanel extends JPanel implements ActionListener {
     ButtonsPanel() {
         inBut = new JButton("Load Fasta");
         outBut = new JButton("Specify Edge CSV");
-        runBut = new JButton("Run TN93");
+        runBut = new JButton("Run TN93.TN93");
 
         inBut.setActionCommand("loadFasta");
         outBut.setActionCommand("specifyEdgeListFile");

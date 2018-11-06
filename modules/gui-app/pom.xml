@@ -40,7 +40,6 @@
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
                     <appendAssemblyId>false</appendAssemblyId>
-                    <outputDirectory>../tn93</outputDirectory>
                 </configuration>
                 <executions>
                     <execution>
