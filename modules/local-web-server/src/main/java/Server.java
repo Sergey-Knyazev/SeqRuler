@@ -15,11 +15,12 @@ public class Server {
     @OnOpen
     public void onOpen(Session session) {
         System.out.printf("Session opened, id: %s%n", session.getId());
-        try {
+/*        try {
             session.getBasicRemote().sendText("Hi there, we are successfully connected.");
         } catch (IOException ex) {
             ex.printStackTrace();
         }
+*/
     }
 
     @OnMessage
@@ -29,7 +30,12 @@ public class Server {
         try {
             LinkedList<Seq> seqs = TN93.read_seqs(new Scanner(message));
             double [][] dist = TN93.tn93(seqs);
-            session.getBasicRemote().sendText(String.format("result: %f%n", dist[0][1]));
+            for (int i = 1; i < dist.length; ++i) {
+                for (int j = 0; j < i; ++j) {
+                    session.getBasicRemote().sendText(String.format("%s,%s,%f", seqs.get(i).name, seqs.get(j).name, dist[i][j]));
+                }
+            }
+            //session.getBasicRemote().sendText(String.format("result: %f%n", dist[0][1]));
         } catch (IOException ex) {
             ex.printStackTrace();
         }

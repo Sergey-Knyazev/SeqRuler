@@ -8,7 +8,14 @@
         <outputRelativeToContentRoot value="true" />
         <module name="gui-app" />
         <module name="tn93 (1) (gov.cdc)" />
+        <module name="web-server" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="gui-app" target="1.5" />
+      <module name="main" target="1.5" />
+      <module name="modules" target="1.5" />
+      <module name="web-server" target="1.5" />
+    </bytecodeTargetLevel>
   </component>
 </project>

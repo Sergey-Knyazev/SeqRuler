@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/modules/gui-app/gui-app.iml" filepath="$PROJECT_DIR$/modules/gui-app/gui-app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/main.iml" filepath="$PROJECT_DIR$/main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/modules/modules.iml" filepath="$PROJECT_DIR$/modules/modules.iml" />
+      <module fileurl="file://$PROJECT_DIR$/modules/local-web-server/web-server.iml" filepath="$PROJECT_DIR$/modules/local-web-server/web-server.iml" />
+    </modules>
+  </component>
+</project>

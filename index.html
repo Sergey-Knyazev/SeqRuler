@@ -19,14 +19,14 @@
     function sendMsg() {
         var msgToSend = msgField.value;
         webSocket.send(msgToSend);
-        divMsg.innerHTML += "<div style='color:red'>Client> " + msgToSend +
-                            "</div>"
+//        divMsg.innerHTML += "<div style='color:red'>Client> " + msgToSend +
+//                            "</div>"
         msgField.value = "";
     }
 
     webSocket.onmessage = function(message) {
-                divMsg.innerHTML += "Server> : " + message.data;
-
+//                divMsg.innerHTML += "Server> : " + message.data;
+				divMsg.innerHTML += message.data + "\n";
             }
 
     webSocket.onopen = function() {

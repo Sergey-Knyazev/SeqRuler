@@ -36,7 +36,9 @@ public class Main implements Runnable{
                 }
             });
         }
-        else TN93.tn93Fasta(inputFile, outputFile);
+        else {
+            TN93.tn93Fasta(inputFile, outputFile);
+        }
     }
     private static void run_server() throws InterruptedException {
         System.out.println("To stop the server press Ctrl-C");
@@ -84,7 +86,7 @@ class ButtonsPanel extends JPanel implements ActionListener {
     ButtonsPanel() {
         inBut = new JButton("Load Fasta");
         outBut = new JButton("Specify Edge CSV");
-        runBut = new JButton("Run TN93.TN93");
+        runBut = new JButton("Run TN93");
 
         inBut.setActionCommand("loadFasta");
         outBut.setActionCommand("specifyEdgeListFile");
