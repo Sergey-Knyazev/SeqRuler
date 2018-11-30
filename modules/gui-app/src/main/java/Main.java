@@ -6,6 +6,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import static javax.swing.JOptionPane.showMessageDialog;
 
@@ -64,11 +65,9 @@ public class Main implements Runnable{
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         //Create and set up the content pane.
-        StatusPanel statusPanel = new StatusPanel();
-        ButtonsPanel buttonsPanel = new ButtonsPanel();
-        mainPane.add(statusPanel);
-        mainPane.add(buttonsPanel);
-        buttonsPanel.setOpaque(true); //content panes must be opaque
+        TN93_Panel panel = new TN93_Panel();
+        mainPane.add(panel);
+        panel.setOpaque(true); //content panes must be opaque
         frame.setContentPane(mainPane);
 
         //Display the window.
@@ -77,16 +76,22 @@ public class Main implements Runnable{
     }
 }
 
-class ButtonsPanel extends JPanel implements ActionListener {
-    protected JButton inBut, outBut, runBut;
+class TN93_Panel extends JPanel implements ActionListener {
+    private JButton inBut, outBut, runBut;
+    private JTextField fastaTextField, edgeListTextField;
+    private JProgressBar progress;
 
     private File fastaFile, edgeListFile;
 
 
-    ButtonsPanel() {
+    TN93_Panel() {
         inBut = new JButton("Load Fasta");
         outBut = new JButton("Specify Edge CSV");
         runBut = new JButton("Run TN93");
+
+        fastaTextField = new JTextField(20);
+        edgeListTextField = new JTextField(20);
+        progress = new JProgressBar(0, 100);
 
         inBut.setActionCommand("loadFasta");
         outBut.setActionCommand("specifyEdgeListFile");
@@ -96,25 +101,32 @@ class ButtonsPanel extends JPanel implements ActionListener {
         outBut.addActionListener(this);
         runBut.addActionListener(this);
 
+        setLayout(new GridLayout(3, 2));
+
+        add(fastaTextField);
         add(inBut);
+        add(edgeListTextField);
         add(outBut);
+        add(progress);
         add(runBut);
     }
 
     public void actionPerformed(ActionEvent e) {
         if("loadFasta".equals(e.getActionCommand())) {
             JFileChooser fileopen =  new JFileChooser();
+            FileNameExtensionFilter filter = new FileNameExtensionFilter("FASTA FILES", "fa", "fas", "fasta");
+            fileopen.addChoosableFileFilter(filter);
             if(JFileChooser.APPROVE_OPTION == fileopen.showDialog(null, "Open Fasta file")) {
                 fastaFile = fileopen.getSelectedFile();
-                System.out.println(fastaFile);
+                fastaTextField.setText(fastaFile.getName());
             }
         }
         else if("specifyEdgeListFile".equals(e.getActionCommand())) {
             JFileChooser fileopen =  new JFileChooser();
-            fileopen.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            //fileopen.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
             if(JFileChooser.APPROVE_OPTION == fileopen.showDialog(null, "Specify Edge List File")) {
                 edgeListFile = fileopen.getSelectedFile();
-                System.out.println(edgeListFile);
+                edgeListTextField.setText(edgeListFile.getName());
             }
         }
         else if("runTN93".equals(e.getActionCommand())) {

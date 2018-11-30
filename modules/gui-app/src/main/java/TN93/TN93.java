@@ -9,10 +9,11 @@ import static java.lang.Math.log;
 
 public class TN93 {
     public static void tn93Fasta(File inputFile, File outputFile) {
+        PrintWriter f = null;
         try {
             LinkedList<Seq> seqs = read_fasta(inputFile);
             double[][] dist = tn93(seqs);
-            PrintWriter f = new PrintWriter(outputFile);
+            f = new PrintWriter(outputFile);
             f.println("Source,Target,Dist");
             for (int i = 1; i < dist.length; ++i) {
                 for (int j = 0; j < i; ++j) {
@@ -22,6 +23,9 @@ public class TN93 {
         }
         catch(FileNotFoundException e) {
             e.printStackTrace();
+        }
+        finally {
+            if(f != null) f.close();
         }
     }
 
@@ -85,6 +89,8 @@ public class TN93 {
 
     private static LinkedList<Seq> read_fasta(File inputFile) throws FileNotFoundException {
         Scanner sc = new Scanner(inputFile);
-        return read_seqs(sc);
+        LinkedList<Seq> a = read_seqs(sc);
+        sc.close();
+        return a;
     }
 }

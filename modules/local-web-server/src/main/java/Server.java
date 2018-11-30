@@ -32,7 +32,8 @@ public class Server {
             double [][] dist = TN93.tn93(seqs);
             for (int i = 1; i < dist.length; ++i) {
                 for (int j = 0; j < i; ++j) {
-                    session.getBasicRemote().sendText(String.format("%s,%s,%f", seqs.get(i).name, seqs.get(j).name, dist[i][j]));
+                    session.getBasicRemote().sendText(String.format("%s,%s,%f", seqs.get(i).getName(),
+                            seqs.get(j).getName(), dist[i][j]));
                 }
             }
             //session.getBasicRemote().sendText(String.format("result: %f%n", dist[0][1]));
