@@ -71,12 +71,12 @@ public class TN93 {
         double g_r = nucl_freq[Seq.A]+nucl_freq[Seq.G];
         double g_y = nucl_freq[Seq.C]+nucl_freq[Seq.T];
         boolean useK2P = false;
-        for(int i=0; i<4; ++i) if (nucl_freq[i] == 0) useK2P = true;
-        if (useK2P) {
-            //TODO:
-            System.out.println("Hi");
-            return 0;
-        }
+        //for(int i=0; i<4; ++i) if (nucl_freq[i] == 0) useK2P = true;
+        //if (useK2P) {
+        //    //TODO:
+        //    System.out.println("Hi");
+        //    return 0;
+        //}
         double k_ag = nucl_freq[Seq.A]*nucl_freq[Seq.G]/g_r;
         double k_tc = nucl_freq[Seq.T]*nucl_freq[Seq.C]/g_y;
         double k_ry = g_r*g_y;
