@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
 import static java.lang.Math.log;
 
 public class TN93 {
-    public static void tn93Fasta(File inputFile, File outputFile) {
+    public static void tn93Fasta(File inputFile, File outputFile, float edgeThreshold) {
         PrintWriter f = null;
         try {
             LinkedList<Seq> seqs = read_fasta(inputFile);
@@ -18,7 +18,8 @@ public class TN93 {
             f.println("Source,Target,Dist");
             for (int i = 1; i < dist.length; ++i) {
                 for (int j = 0; j < i; ++j) {
-                    f.println(String.format("%s,%s,%f", seqs.get(i).getName(), seqs.get(j).getName(), dist[i][j]));
+                    if (dist[i][j] <= edgeThreshold) f.println(
+                            String.format("%s,%s,%f", seqs.get(i).getName(), seqs.get(j).getName(), dist[i][j]));
                 }
             }
         }

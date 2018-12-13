@@ -21,6 +21,9 @@ public class Main implements Runnable{
     private File outputFile;
     @CommandLine.Option(names={"-s", "--server"}, description="run jetty server")
     private boolean is_server;
+    @CommandLine.Option(names={"-t", "--edge-threshold"},
+            description="edges above the threshold are not reported in output")
+    private String edgeThresholdString;
 
     public void run() {
         if(is_server) {
@@ -38,7 +41,7 @@ public class Main implements Runnable{
             });
         }
         else {
-            TN93.tn93Fasta(inputFile, outputFile);
+            TN93.tn93Fasta(inputFile, outputFile, Float.parseFloat(edgeThresholdString));
         }
     }
     private static void run_server() throws InterruptedException {
@@ -77,8 +80,9 @@ public class Main implements Runnable{
 }
 
 class TN93_Panel extends JPanel implements ActionListener {
+    private float edgeThreshold;
     private JButton inBut, outBut, runBut;
-    private JTextField fastaTextField, edgeListTextField;
+    private JTextField fastaTextField, edgeListTextField, edgeThresholdField;
     private JProgressBar progress;
 
     private File fastaFile, edgeListFile;
@@ -91,6 +95,7 @@ class TN93_Panel extends JPanel implements ActionListener {
 
         fastaTextField = new JTextField(20);
         edgeListTextField = new JTextField(20);
+        edgeThresholdField = new JTextField("0.015");
         progress = new JProgressBar(0, 100);
 
         inBut.setActionCommand("loadFasta");
@@ -101,8 +106,10 @@ class TN93_Panel extends JPanel implements ActionListener {
         outBut.addActionListener(this);
         runBut.addActionListener(this);
 
-        setLayout(new GridLayout(3, 2));
+        setLayout(new GridLayout(4, 2));
 
+        add(new JLabel("Edge length threshold:", JLabel.RIGHT));
+        add(edgeThresholdField);
         add(fastaTextField);
         add(inBut);
         add(edgeListTextField);
@@ -138,7 +145,18 @@ class TN93_Panel extends JPanel implements ActionListener {
                 showMessageDialog(null, "Specify an Edge List file!");
                 return;
             }
-            TN93.tn93Fasta(fastaFile, edgeListFile);
+            if(!parseEdgeThershold()) {
+                showMessageDialog(null, "Threshold should be number!");
+            }
+            TN93.tn93Fasta(fastaFile, edgeListFile, edgeThreshold);
+        }
+    }
+    private boolean parseEdgeThershold() {
+        try {
+            edgeThreshold = Float.parseFloat(edgeThresholdField.getText());
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
         }
     }
 }

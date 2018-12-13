@@ -33,3 +33,5 @@ jetty/
 
 #build folder
 target/
+
+!tn93.jar
