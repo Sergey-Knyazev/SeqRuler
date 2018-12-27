@@ -20,7 +20,7 @@ public class Seq {
     private int[] seq_enc;
     Seq(String name, String seq) {
         this.name = name;
-        this.seq = seq;
+        this.seq = seq.toUpperCase();
         seq_enc = new int[seq.length()];
         for(int i=0;i<seq.length();++i) {
             char c = seq.charAt(i);

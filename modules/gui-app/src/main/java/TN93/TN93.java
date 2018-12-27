@@ -53,7 +53,9 @@ public class TN93 {
         int[] nucl_counts = new int[4];
         int[][] nucl_pair_count = new int[4][4];
 
-        for(int i=0; i<s1.length; ++i) {
+        int length = Math.min(s1.length, s2.length);
+
+        for(int i=0; i<length; ++i) {
             int c1 = s1[i];
             int c2 = s2[i];
             if(c1==Seq.N || c2==Seq.N) continue;
@@ -92,6 +94,7 @@ public class TN93 {
         String name="", seq="";
         while(sc.hasNextLine()) {
             String line = sc.nextLine().trim();
+            if(line.length() == 0) continue;
             if(line.charAt(0)=='>') {
                 if (name.length()!=0) seqs.add(new Seq(name, seq));
                 name = line.substring(1);
