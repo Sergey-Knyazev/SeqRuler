@@ -5,11 +5,29 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.Observable;
 
 import static java.lang.Math.log;
 
-public class TN93 {
-    public static void tn93Fasta(File inputFile, File outputFile, float edgeThreshold) {
+public class TN93 extends Observable {
+    private float edgeThreshold = 1;
+    private File inputFile;
+    private File outputFile;
+
+    public void setEdgeThreshold(float edgeThreshold) {
+        this.edgeThreshold = edgeThreshold;
+    }
+
+
+    public void setInputFile(File inputFile) {
+        this.inputFile = inputFile;
+    }
+
+    public void setOutputFile(File outputFile) {
+        this.outputFile = outputFile;
+    }
+
+    public void tn93Fasta() {
         PrintWriter f = null;
         try {
             LinkedList<Seq> seqs = read_fasta(inputFile);
@@ -31,20 +49,30 @@ public class TN93 {
         }
     }
 
-    public static double[][] tn93(LinkedList<Seq> seqs) {
+    public double[][] tn93(LinkedList<Seq> seqs) {
         double[][] dist = new double[seqs.size()][seqs.size()];
         long startTime = System.nanoTime(), estimatedTime;
+        int pairs_count = (dist.length * dist.length - dist.length)/2;
+        int current_pair = 0;
         for (int i = 1; i < dist.length; ++i) {
-            if(i % 1000 == 0) {
-                estimatedTime = System.nanoTime() - startTime;
-                System.out.print(String.format("%d out of %d for ", i, dist.length));
-                System.out.print(TimeUnit.SECONDS.convert(estimatedTime, TimeUnit.NANOSECONDS));
-                System.out.println(" sec");
-            }
             for (int j = 0; j < i; ++j) {
+                current_pair++;
+                if(current_pair % (pairs_count/100) == 0) {
+                    estimatedTime = System.nanoTime() - startTime;
+                    int percCompleted = current_pair*100/pairs_count;
+                    System.out.print(String.format("%d%% completed for ", percCompleted));
+                    System.out.print(TimeUnit.SECONDS.convert(estimatedTime, TimeUnit.NANOSECONDS));
+                    System.out.println(" sec");
+                    System.out.println(pairs_count);
+                    System.out.println(current_pair);
+                    setChanged();
+                    notifyObservers(percCompleted);
+                }
                 dist[i][j] = dist[j][i] = tn93(seqs.get(i).getSeq_enc(), seqs.get(j).getSeq_enc());
             }
         }
+        setChanged();
+        notifyObservers(100);
         return dist;
     }
 

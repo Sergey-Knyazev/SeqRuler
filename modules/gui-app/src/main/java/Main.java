@@ -6,6 +6,8 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.Observable;
+import java.util.Observer;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import static javax.swing.JOptionPane.showMessageDialog;
@@ -41,7 +43,11 @@ public class Main implements Runnable{
             });
         }
         else {
-            TN93.tn93Fasta(inputFile, outputFile, Float.parseFloat(edgeThresholdString));
+            TN93 tn93 = new TN93();
+            tn93.setEdgeThreshold(Float.parseFloat(edgeThresholdString));
+            tn93.setInputFile(inputFile);
+            tn93.setOutputFile(outputFile);
+            tn93.tn93Fasta();
         }
     }
     private static void run_server() throws InterruptedException {
@@ -79,16 +85,20 @@ public class Main implements Runnable{
     }
 }
 
-class TN93_Panel extends JPanel implements ActionListener {
+class TN93_Panel extends JPanel implements ActionListener, Observer {
     private float edgeThreshold;
     private JButton inBut, outBut, runBut;
     private JTextField fastaTextField, edgeListTextField, edgeThresholdField;
     private JProgressBar progress;
 
     private File fastaFile, edgeListFile;
+    private TN93 tn93;
 
 
     TN93_Panel() {
+        tn93 = new TN93();
+        tn93.addObserver(this);
+
         inBut = new JButton("Load Fasta");
         outBut = new JButton("Specify Edge CSV");
         runBut = new JButton("Run TN93");
@@ -97,6 +107,7 @@ class TN93_Panel extends JPanel implements ActionListener {
         edgeListTextField = new JTextField(20);
         edgeThresholdField = new JTextField("0.015");
         progress = new JProgressBar(0, 100);
+        progress.setStringPainted(true);
 
         inBut.setActionCommand("loadFasta");
         outBut.setActionCommand("specifyEdgeListFile");
@@ -148,9 +159,36 @@ class TN93_Panel extends JPanel implements ActionListener {
             if(!parseEdgeThershold()) {
                 showMessageDialog(null, "Threshold should be number!");
             }
-            TN93.tn93Fasta(fastaFile, edgeListFile, edgeThreshold);
+            inactivatePanel();
+            tn93.setEdgeThreshold(edgeThreshold);
+            tn93.setInputFile(fastaFile);
+            tn93.setOutputFile(edgeListFile);
+            SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+                @Override
+                protected Void doInBackground() {
+                    tn93.tn93Fasta();
+                    return null;
+                }
+                @Override
+                protected void done() {
+                    activatePanel();
+                }
+            };
+            worker.execute();
         }
     }
+    private void inactivatePanel() {
+        runBut.setEnabled(false);
+        inBut.setEnabled(false);
+        outBut.setEnabled(false);
+        progress.setValue(0);
+    }
+    private void activatePanel() {
+        runBut.setEnabled(true);
+        inBut.setEnabled(true);
+        outBut.setEnabled(true);
+    }
+
     private boolean parseEdgeThershold() {
         try {
             edgeThreshold = Float.parseFloat(edgeThresholdField.getText());
@@ -158,6 +196,9 @@ class TN93_Panel extends JPanel implements ActionListener {
         } catch (NumberFormatException e) {
             return false;
         }
+    }
+    public void update(Observable obj, Object arg) {
+        this.progress.setValue((Integer) arg);
     }
 }
 

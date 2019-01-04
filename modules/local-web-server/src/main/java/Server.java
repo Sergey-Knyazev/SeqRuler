@@ -29,7 +29,8 @@ public class Server {
                 session.getId(), message);
         try {
             LinkedList<Seq> seqs = TN93.read_seqs(new Scanner(message));
-            double [][] dist = TN93.tn93(seqs);
+            TN93 tn93 = new TN93();
+            double [][] dist = tn93.tn93(seqs);
             for (int i = 1; i < dist.length; ++i) {
                 for (int j = 0; j < i; ++j) {
                     session.getBasicRemote().sendText(String.format("%s,%s,%f", seqs.get(i).getName(),
