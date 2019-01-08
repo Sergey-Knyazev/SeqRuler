@@ -10,6 +10,7 @@ import java.util.Observable;
 import static java.lang.Math.log;
 
 public class TN93 extends Observable {
+    private static final double TN_93_MAX_DIST = 1000.;
     private float edgeThreshold = 1;
     private File inputFile;
     private File outputFile;
@@ -63,8 +64,6 @@ public class TN93 extends Observable {
                     System.out.print(String.format("%d%% completed for ", percCompleted));
                     System.out.print(TimeUnit.SECONDS.convert(estimatedTime, TimeUnit.NANOSECONDS));
                     System.out.println(" sec");
-                    System.out.println(pairs_count);
-                    System.out.println(current_pair);
                     setChanged();
                     notifyObservers(percCompleted);
                 }
@@ -102,19 +101,28 @@ public class TN93 extends Observable {
         double g_r = nucl_freq[Seq.A]+nucl_freq[Seq.G];
         double g_y = nucl_freq[Seq.C]+nucl_freq[Seq.T];
         boolean useK2P = false;
-        //for(int i=0; i<4; ++i) if (nucl_freq[i] == 0) useK2P = true;
-        //if (useK2P) {
-        //    //TODO:
-        //    System.out.println("Hi");
-        //    return 0;
-        //}
+        for(int i=0; i<4; ++i) if (nucl_freq[i] == 0) useK2P = true;
+
         double k_ag = nucl_freq[Seq.A]*nucl_freq[Seq.G]/g_r;
         double k_tc = nucl_freq[Seq.T]*nucl_freq[Seq.C]/g_y;
         double k_ry = g_r*g_y;
 
-        return -2*k_ag*log(1-p1/(2*k_ag)-q/(2*g_r))
-                -2*k_tc*log(1-p2/(2*k_tc)-q/(2*g_y))
-                -2*(k_ry-k_ag*g_y-k_tc*g_r)*log(1-q/(2*k_ry));
+        double dist;
+
+        if(useK2P) {
+            double l1 = 1.-2.*(p1+p2)-q;
+            double l2 = 1.-2.*q;
+            if(l1>0.&&l2>0.) dist = log(p1)/2-log(p2)/4;
+            else dist=TN_93_MAX_DIST;
+        }
+        else {
+            double l1 = 1-p1/(2*k_ag)-q/(2*g_r);
+            double l2 = 1-p2/(2*k_tc)-q/(2*g_y);
+            double l3 = 1-q/(2*k_ry);
+            if(l1>0. && l2>0. && l3>0.) dist=-2*k_ag*log(l1)-2*k_tc*log(l2)-2*(k_ry-k_ag*g_y-k_tc*g_r)*log(l3);
+            else dist=TN_93_MAX_DIST;
+        }
+        return dist <= 0. ? 0. : dist;
     }
 
     public static LinkedList<Seq> read_seqs(Scanner sc) {
