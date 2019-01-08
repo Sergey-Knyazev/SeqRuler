@@ -116,10 +116,11 @@ public class TN93 extends Observable {
             else dist=TN_93_MAX_DIST;
         }
         else {
-            double l1 = 1-p1/(2*k_ag)-q/(2*g_r);
-            double l2 = 1-p2/(2*k_tc)-q/(2*g_y);
-            double l3 = 1-q/(2*k_ry);
-            if(l1>0. && l2>0. && l3>0.) dist=-2*k_ag*log(l1)-2*k_tc*log(l2)-2*(k_ry-k_ag*g_y-k_tc*g_r)*log(l3);
+            double l_ag = 1-p1/(2*k_ag)-q/(2*g_r);
+            double l_tc = 1-p2/(2*k_tc)-q/(2*g_y);
+            double l_ry = 1-q/(2*k_ry);
+            if(l_ag>0. && l_tc>0. && l_ry>0.)
+                dist=-2*k_ag*log(l_ag)-2*k_tc*log(l_tc)-2*(k_ry-k_ag*g_y-k_tc*g_r)*log(l_ry);
             else dist=TN_93_MAX_DIST;
         }
         return dist <= 0. ? 0. : dist;
