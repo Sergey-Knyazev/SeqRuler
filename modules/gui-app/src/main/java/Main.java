@@ -90,6 +90,7 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
     private JButton inBut, outBut, runBut;
     private JTextField fastaTextField, edgeListTextField, edgeThresholdField;
     private JProgressBar progress;
+    private JComboBox ambiguityMode;
 
     private File fastaFile, edgeListFile;
     private TN93 tn93;
@@ -104,10 +105,13 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
         runBut = new JButton("Run TN93");
 
         fastaTextField = new JTextField(20);
+        fastaTextField.setEditable(false);
         edgeListTextField = new JTextField(20);
+        edgeListTextField.setEditable(false);
         edgeThresholdField = new JTextField("0.015");
         progress = new JProgressBar(0, 100);
         progress.setStringPainted(true);
+        ambiguityMode = new JComboBox(TN93.ambiguityModeList);
 
         inBut.setActionCommand("loadFasta");
         outBut.setActionCommand("specifyEdgeListFile");
@@ -117,14 +121,16 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
         outBut.addActionListener(this);
         runBut.addActionListener(this);
 
-        setLayout(new GridLayout(4, 2));
+        setLayout(new GridLayout(5, 2));
 
-        add(new JLabel("Edge length threshold:", JLabel.RIGHT));
-        add(edgeThresholdField);
         add(fastaTextField);
         add(inBut);
         add(edgeListTextField);
         add(outBut);
+        add(new JLabel("Edge length threshold:", JLabel.RIGHT));
+        add(edgeThresholdField);
+        add(new JLabel("Ambiguity mode:", JLabel.RIGHT));
+        add(ambiguityMode);
         add(progress);
         add(runBut);
     }
@@ -163,6 +169,7 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
             tn93.setEdgeThreshold(edgeThreshold);
             tn93.setInputFile(fastaFile);
             tn93.setOutputFile(edgeListFile);
+            tn93.setAmbiguityMode((String)ambiguityMode.getSelectedItem());
             SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
                 @Override
                 protected Void doInBackground() {

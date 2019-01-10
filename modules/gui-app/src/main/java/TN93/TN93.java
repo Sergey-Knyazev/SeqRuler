@@ -11,9 +11,15 @@ import static java.lang.Math.log;
 
 public class TN93 extends Observable {
     private static final double TN_93_MAX_DIST = 1000.;
+    public static final String[] ambiguityModeList = {"resolve", "average", "skip"};
     private float edgeThreshold = 1;
     private File inputFile;
     private File outputFile;
+    private String ambiguityMode;
+
+    public void setAmbiguityMode(String ambiguityMode) {
+        this.ambiguityMode = ambiguityMode;
+    }
 
     public void setEdgeThreshold(float edgeThreshold) {
         this.edgeThreshold = edgeThreshold;
@@ -74,30 +80,50 @@ public class TN93 extends Observable {
         notifyObservers(100);
         return dist;
     }
-
-    private static double tn93(int[] s1, int[] s2) {
-        int total_non_gap = 0;
-        int[] nucl_counts = new int[4];
-        int[][] nucl_pair_count = new int[4][4];
+    private class PairStat {
+        int total_non_gap;
+        int[] nucl_counts;
+        int[][] nucl_pair_count;
+    }
+    private PairStat getPairStat(int[] s1, int[] s2) {
+        PairStat a = new PairStat();
+        a.total_non_gap = 0;
+        a.nucl_counts = new int[4];
+        a.nucl_pair_count = new int[4][4];
 
         int length = Math.min(s1.length, s2.length);
+
+        switch(ambiguityMode) {
+            case "resolve":
+                break;
+            case "average":
+                break;
+            case "skip":
+                break;
+        }
 
         for(int i=0; i<length; ++i) {
             int c1 = s1[i];
             int c2 = s2[i];
             if(c1==Seq.N || c2==Seq.N) continue;
-            ++nucl_counts[c1];
-            ++nucl_counts[c2];
-            ++nucl_pair_count[c1][c2];
-            ++nucl_pair_count[c2][c1];
-            ++total_non_gap;
+            ++a.nucl_counts[c1];
+            ++a.nucl_counts[c2];
+            ++a.nucl_pair_count[c1][c2];
+            ++a.nucl_pair_count[c2][c1];
+            ++a.total_non_gap;
         }
+        return a;
+    }
+
+    private double tn93(int[] s1, int[] s2) {
+        PairStat ps = getPairStat(s1, s2);
+
         double[] nucl_freq = new double[4];
-        for(int i=0; i<4; ++i) nucl_freq[i] = (double) nucl_counts[i]/2/total_non_gap;
-        double p1 = (double) nucl_pair_count[Seq.A][Seq.G]/total_non_gap;
-        double p2 = (double) nucl_pair_count[Seq.C][Seq.T]/total_non_gap;
-        double q = ((double) nucl_pair_count[Seq.A][Seq.C]+nucl_pair_count[Seq.A][Seq.T]+nucl_pair_count[Seq.C][Seq.G]+
-                nucl_pair_count[Seq.G][Seq.T])/total_non_gap;
+        for(int i=0; i<4; ++i) nucl_freq[i] = (double) ps.nucl_counts[i]/2/ps.total_non_gap;
+        double p1 = (double) ps.nucl_pair_count[Seq.A][Seq.G]/ps.total_non_gap;
+        double p2 = (double) ps.nucl_pair_count[Seq.C][Seq.T]/ps.total_non_gap;
+        double q = ((double) ps.nucl_pair_count[Seq.A][Seq.C]+ps.nucl_pair_count[Seq.A][Seq.T]+ps.nucl_pair_count[Seq.C][Seq.G]+
+                ps.nucl_pair_count[Seq.G][Seq.T])/ps.total_non_gap;
         double g_r = nucl_freq[Seq.A]+nucl_freq[Seq.G];
         double g_y = nucl_freq[Seq.C]+nucl_freq[Seq.T];
         boolean useK2P = false;
