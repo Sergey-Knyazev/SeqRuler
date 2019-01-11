@@ -1,14 +1,19 @@
 package TN93;
 
 public class Seq {
+    final static int A=0,
+                            C=1,
+                            G=2,
+                            T=3;
     private final static String NUCLEOTIDES = "ACGTRYKMSWBDHVN";
+    final static int N=NUCLEOTIDES.length()-1;
     private static int[] CIPHER;
     private final static int OFFSET = Character.getNumericValue('A');
     private final static int GAP = '-';
     private final static int GAP_CODE = NUCLEOTIDES.length()+1;
     static {
 
-        CIPHER = new int[Character.getNumericValue('Y')- OFFSET];
+        CIPHER = new int[Character.getNumericValue('Y')- OFFSET + 1];
         for(int i = 0; i!= NUCLEOTIDES.length(); ++i) {
             CIPHER[Character.getNumericValue(NUCLEOTIDES.charAt(i))- OFFSET]=i;
         }
@@ -37,7 +42,7 @@ public class Seq {
     private String seq;
     private int[] seq_enc;
 
-    private static int get_code(char c) {
+    private static int getCode(char c) {
         return c==GAP? GAP_CODE: CIPHER[Character.getNumericValue(c) - OFFSET];
     }
 
@@ -46,19 +51,19 @@ public class Seq {
         this.seq = seq.toUpperCase();
         seq_enc = new int[seq.length()];
         for(int i=0;i<seq.length();++i) {
-            char c = seq.charAt(i);
-            seq_enc[i] = get_code(c);
+            char c = this.seq.charAt(i);
+            seq_enc[i] = getCode(c);
         }
     }
     public String getName() {
         return name;
     }
 
-    public String getSeq() {
-        return seq;
-    }
 
-    public int[] getSeq_enc() {
+    int[] getSeqEnc() {
         return seq_enc;
+    }
+    static int getMask(int i) {
+        return masks[i];
     }
 }

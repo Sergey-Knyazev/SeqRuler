@@ -48,7 +48,7 @@ public class TN93 extends Observable {
                 }
             }
         }
-        catch(FileNotFoundException e) {
+        catch(Exception e) {
             e.printStackTrace();
         }
         finally {
@@ -73,7 +73,7 @@ public class TN93 extends Observable {
                     setChanged();
                     notifyObservers(percCompleted);
                 }
-                dist[i][j] = dist[j][i] = tn93(seqs.get(i).getSeq_enc(), seqs.get(j).getSeq_enc());
+                dist[i][j] = dist[j][i] = tn93(seqs.get(i).getSeqEnc(), seqs.get(j).getSeqEnc());
             }
         }
         setChanged();
@@ -82,35 +82,92 @@ public class TN93 extends Observable {
     }
     private class PairStat {
         int total_non_gap;
-        int[] nucl_counts;
-        int[][] nucl_pair_count;
+        double[] nucl_counts;
+        double[][] nucl_pair_count;
+
+        PairStat() {
+            total_non_gap = 0;
+            nucl_counts = new double[4];
+            nucl_pair_count = new double[4][4];
+        }
+        void updateStat(int c1, int c2) {
+            ++nucl_counts[c1];
+            ++nucl_counts[c2];
+            ++nucl_pair_count[c1][c2];
+            ++nucl_pair_count[c2][c1];
+        }
+        void resolveMatch(int match) {
+            int count=0;
+            int m = match;
+            for(int i=0; i!=4; ++i) {
+                if((m&1)!=0) ++count;
+                m=m>>1;
+            }
+            double frac =1.0/count;
+            for(int i=0; i!=4; ++i) {
+                if((match&1)!=0) {
+                    nucl_counts[i]+=2.0*frac;
+                    nucl_pair_count[i][i]+=2.0*frac;
+                }
+                match=match>>1;
+            }
+        }
+        void averageAmbig(int mask1, int mask2) {
+            int count1=0, count2=0;
+            int m1=mask1, m2=mask2;
+            for(int i=0; i!=4; ++i) {
+                if((m1&1)!=0) ++count1;
+                if((m2&1)!=0) ++count2;
+                m1=m1>>1;
+                m2=m2>>1;
+            }
+            double frac =1.0/(count1*count2);
+            for(int i=0; i!=4; ++i) {
+                if((mask1&1)!=0)
+                    for(int j=0; j!=4; ++j) {
+                        if((mask2&1)!=0) {
+                            nucl_counts[i]+=frac;
+                            nucl_counts[j]+=frac;
+                            nucl_pair_count[i][j]+=frac;
+                            nucl_pair_count[j][i]+=frac;
+                        }
+                        mask2=mask2>>1;
+                    }
+                mask1=mask1>>1;
+            }
+
+        }
     }
     private PairStat getPairStat(int[] s1, int[] s2) {
         PairStat a = new PairStat();
-        a.total_non_gap = 0;
-        a.nucl_counts = new int[4];
-        a.nucl_pair_count = new int[4][4];
 
         int length = Math.min(s1.length, s2.length);
-
-        switch(ambiguityMode) {
-            case "resolve":
-                break;
-            case "average":
-                break;
-            case "skip":
-                break;
-        }
 
         for(int i=0; i<length; ++i) {
             int c1 = s1[i];
             int c2 = s2[i];
             if(c1==Seq.N || c2==Seq.N) continue;
-            ++a.nucl_counts[c1];
-            ++a.nucl_counts[c2];
-            ++a.nucl_pair_count[c1][c2];
-            ++a.nucl_pair_count[c2][c1];
             ++a.total_non_gap;
+            if(c1<=Seq.T && c2<=Seq.T) {
+                a.updateStat(c1, c2);
+            }
+            else {
+                int m1 = Seq.getMask(c1);
+                int m2 = Seq.getMask(c2);
+                switch(ambiguityMode) {
+                    case "resolve":
+                        int match = m1&m2;
+                        if(match != 0) {
+                            a.resolveMatch(match);
+                            break;
+                        }
+                    case "average":
+                        a.averageAmbig(c1,c2);
+                        break;
+                    case "skip":
+                        break;
+                }
+            }
         }
         return a;
     }
@@ -119,10 +176,10 @@ public class TN93 extends Observable {
         PairStat ps = getPairStat(s1, s2);
 
         double[] nucl_freq = new double[4];
-        for(int i=0; i<4; ++i) nucl_freq[i] = (double) ps.nucl_counts[i]/2/ps.total_non_gap;
-        double p1 = (double) ps.nucl_pair_count[Seq.A][Seq.G]/ps.total_non_gap;
-        double p2 = (double) ps.nucl_pair_count[Seq.C][Seq.T]/ps.total_non_gap;
-        double q = ((double) ps.nucl_pair_count[Seq.A][Seq.C]+ps.nucl_pair_count[Seq.A][Seq.T]+ps.nucl_pair_count[Seq.C][Seq.G]+
+        for(int i=0; i<4; ++i) nucl_freq[i] = ps.nucl_counts[i]/2.0/ps.total_non_gap;
+        double p1 = ps.nucl_pair_count[Seq.A][Seq.G]/ps.total_non_gap;
+        double p2 = ps.nucl_pair_count[Seq.C][Seq.T]/ps.total_non_gap;
+        double q = (ps.nucl_pair_count[Seq.A][Seq.C]+ps.nucl_pair_count[Seq.A][Seq.T]+ps.nucl_pair_count[Seq.C][Seq.G]+
                 ps.nucl_pair_count[Seq.G][Seq.T])/ps.total_non_gap;
         double g_r = nucl_freq[Seq.A]+nucl_freq[Seq.G];
         double g_y = nucl_freq[Seq.C]+nucl_freq[Seq.T];
@@ -155,17 +212,18 @@ public class TN93 extends Observable {
     public static LinkedList<Seq> read_seqs(Scanner sc) {
         LinkedList<Seq> seqs = new LinkedList<Seq>();
         String name="", seq="";
-        while(sc.hasNextLine()) {
+        while (sc.hasNextLine()) {
             String line = sc.nextLine().trim();
-            if(line.length() == 0) continue;
-            if(line.charAt(0)=='>') {
-                if (name.length()!=0) seqs.add(new Seq(name, seq));
+            if (line.length() == 0) continue;
+            if (line.charAt(0) == '>') {
+                if (name.length() != 0)
+                    seqs.add(new Seq(name, seq));
                 name = line.substring(1);
-                seq="";
-            }
-            else seq=seq.concat(line);
+                seq = "";
+            } else seq = seq.concat(line);
         }
-        if(name.length()!=0) seqs.add(new Seq(name, seq));
+        if (name.length() != 0)
+            seqs.add(new Seq(name, seq));
         return seqs;
     }
 
