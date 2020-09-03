@@ -1,1 +1,3 @@
-# tn93
+# SeqRuler
+
+GUI interface for calculating TN93 distance between all sequences in the input fasta file.
