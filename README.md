@@ -4,7 +4,9 @@ GUI interface for calculating TN93 distance between all sequences in the input f
 
 ## Compilation
 
+```bash
 mvn clean install
+```
 
 ## Running
 
