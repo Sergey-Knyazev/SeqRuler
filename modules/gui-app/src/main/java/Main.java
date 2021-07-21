@@ -100,7 +100,7 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
         tn93.addObserver(this);
 
         inBut = new JButton("Load Fasta");
-        outBut = new JButton("Specify Edge CSV");
+        outBut = new JButton("Save as: Edge List CSV File");
         runBut = new JButton("Run TN93");
 
         fastaTextField = new JTextField(20);
