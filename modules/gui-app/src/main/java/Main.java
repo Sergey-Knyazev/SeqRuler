@@ -110,7 +110,7 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
         progress.setStringPainted(true);
 
         inBut.setActionCommand("loadFasta");
-        outBut.setActionCommand("specifyEdgeListFile");
+        outBut.setActionCommand("Save as: Edge List CSV File");
         runBut.setActionCommand("runTN93");
 
         inBut.addActionListener(this);
@@ -149,11 +149,11 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
         }
         else if("runTN93".equals(e.getActionCommand())) {
             if(fastaFile == null) {
-                showMessageDialog(null, "Specify a Fasta file!");
+                showMessageDialog(null, "Specify an input Fasta file!");
                 return;
             }
             if(edgeListFile == null) {
-                showMessageDialog(null, "Specify an Edge List file!");
+                showMessageDialog(null, "Specify an output file using Save as!");
                 return;
             }
             if(!parseEdgeThershold()) {
