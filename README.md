@@ -10,10 +10,13 @@ mvn clean install
 
 ## Running
 
+```bash
 java -jar tn93.jar
+```
 
 ## Help
 
+```bash
 java -jar tn93.jar -h
 
 Usage: tn93 [-hsV] [-i=FILE] [-o=FILE] [-t=<edgeThresholdString>]
@@ -24,3 +27,4 @@ Usage: tn93 [-hsV] [-i=FILE] [-o=FILE] [-t=<edgeThresholdString>]
   -t, --edge-threshold=<edgeThresholdString>
                        edges above the threshold are not reported in output
   -V, --version        Print version information and exit.
+```
