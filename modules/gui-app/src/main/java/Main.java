@@ -110,7 +110,7 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
         progress.setStringPainted(true);
 
         inBut.setActionCommand("loadFasta");
-        outBut.setActionCommand("Save as: Edge List CSV File");
+        outBut.setActionCommand("specifyEdgeListFile");
         runBut.setActionCommand("runTN93");
 
         inBut.addActionListener(this);
