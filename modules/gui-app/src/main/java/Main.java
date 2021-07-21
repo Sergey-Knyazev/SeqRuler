@@ -142,7 +142,7 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
         else if("specifyEdgeListFile".equals(e.getActionCommand())) {
             JFileChooser fileopen =  new JFileChooser();
             //fileopen.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-            if(JFileChooser.APPROVE_OPTION == fileopen.showDialog(null, "Specify Edge List File")) {
+            if(JFileChooser.APPROVE_OPTION == fileopen.showDialog(null, "Save as: Edge List CSV File")) {
                 edgeListFile = fileopen.getSelectedFile();
                 edgeListTextField.setText(edgeListFile.getName());
             }
