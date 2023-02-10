@@ -10,15 +10,15 @@ import java.util.Observable;
 import static java.lang.Math.log;
 
 public class TN93 extends Observable {
-    private static final double TN_93_MAX_DIST = 1000.;
+    // private static final double TN_93_MAX_DIST = 1000.;
     private float edgeThreshold = 1;
     private File inputFile;
     private File outputFile;
+    private String ambiguityHandling;
 
     public void setEdgeThreshold(float edgeThreshold) {
         this.edgeThreshold = edgeThreshold;
     }
-
 
     public void setInputFile(File inputFile) {
         this.inputFile = inputFile;
@@ -27,6 +27,53 @@ public class TN93 extends Observable {
     public void setOutputFile(File outputFile) {
         this.outputFile = outputFile;
     }
+
+    public void setAmbiguityHandling(String ambiguityHandling) {
+        this.ambiguityHandling = ambiguityHandling;
+    }
+
+    final static int[][] resolutions = {
+        // A,C,G,T
+        {1, 0, 0, 0},  // A             -> A (0) (Adenine)
+        {0, 1, 0, 0},  // C             -> C (1) (Cytosine)
+        {0, 0, 1, 0},  // G             -> G (2) (Guanine)
+        {0, 0, 0, 1},  // T             -> T (3) (Thymine)
+        {0, 0, 0, 1},  // T             -> U (4) (Uracil)
+        {1, 0, 1, 0},  // A | G         -> R (5) (Either Purine)
+        {0, 1, 0, 1},  // C | T         -> Y (6) (Either Pyrimidine)
+        {0, 1, 1, 0},  // C | G         -> S (7)
+        {1, 0, 0, 1},  // A | T         -> W (8)
+        {0, 0, 1, 1},  // G | T         -> K (9)
+        {1, 1, 0, 0},  // A | C         -> M (10)
+        {0, 1, 1, 1},  // C | G | T     -> B (11) (Not Adenine)
+        {1, 0, 1, 1},  // A | G | T     -> D (12) (Not Cytosine)
+        {1, 1, 0, 1},  // A | C | T     -> H (13) (Not Guanine)
+        {1, 1, 1, 0},  // A | C | G     -> V (14) (Not Thymine)
+        {1, 1, 1, 1},  // A | C | G | T -> N (15)
+        {1, 1, 1, 1},  // A | C | G | T -> ? (16)
+        {0, 0, 0, 0},  // GAP           -> - (17)
+    };
+
+    final static double[] resolutionsCount = {
+        1.0,  // A
+        1.0,  // C
+        1.0,  // G
+        1.0,  // T
+        1.0,  // U
+        1.0 / 2.0,  // R
+        1.0 / 2.0,  // Y
+        1.0 / 2.0,  // S
+        1.0 / 2.0,  // W
+        1.0 / 2.0,  // K
+        1.0 / 2.0,  // M
+        1.0 / 3.0,  // B
+        1.0 / 3.0,  // D
+        1.0 / 3.0,  // H
+        1.0 / 3.0,  // V
+        1.0 / 4.0,  // N
+        1.0 / 4.0,  // ?
+        0.0,  // GAP
+    };
 
     public void tn93Fasta() {
         PrintWriter f = null;
@@ -75,56 +122,273 @@ public class TN93 extends Observable {
         return dist;
     }
 
-    private static double tn93(int[] s1, int[] s2) {
-        int total_non_gap = 0;
-        int[] nucl_counts = new int[4];
-        int[][] nucl_pair_count = new int[4][4];
+    private double tn93(int[] s1, int[]s2) {
+        double[][] nucl_pair_counts = countPairwiseNucl(s1, s2);
+        double[] nucl_counts = getNuclCounts(nucl_pair_counts);
 
-        int length = Math.min(s1.length, s2.length);
+        double total_non_gap = 2.0 / Arrays.stream(nucl_counts).sum();
 
-        for(int i=0; i<length; ++i) {
+        double[] nucl_freq = new double[4];
+        double auxd = 1.0 / Arrays.stream(nucl_counts).sum();
+        for(int i=0; i<4; ++i) 
+            nucl_freq[i] = nucl_counts[i] * auxd;
+
+        double dist = 0.0;
+        double AG_counts = nucl_pair_counts[Seq.A][Seq.G] + nucl_pair_counts[Seq.G][Seq.A];
+        double AG = AG_counts * total_non_gap;
+        double CT_counts = nucl_pair_counts[Seq.C][Seq.T] + nucl_pair_counts[Seq.T][Seq.C];
+        double CT = CT_counts * total_non_gap;
+        double matching = (nucl_pair_counts[Seq.A][Seq.A] + nucl_pair_counts[Seq.C][Seq.C] + nucl_pair_counts[Seq.T][Seq.T] + nucl_pair_counts[Seq.G][Seq.G]) * total_non_gap;
+        double tv = 1 - (AG + CT + matching);
+
+        boolean useK2P = false;
+        for(int i=0; i<4; ++i) if (nucl_freq[i] == 0.0) useK2P = true;
+
+        if (useK2P) {
+            AG = 1 - 2 * (AG + CT) - tv;
+            CT = 1 - 2 * tv;
+            if (AG > 0 && CT > 0) {
+                dist = -0.5 * log(AG) - 0.25 * log(CT);
+            } else {
+                dist = 1.0;
+            }
+        } else {
+            double fR = nucl_freq[Seq.A] + nucl_freq[Seq.G];
+            double fY = nucl_freq[Seq.C] + nucl_freq[Seq.T];
+            double K1 = 2 * nucl_freq[Seq.A] * nucl_freq[Seq.G] / fR;
+            double K2 = 2 * nucl_freq[Seq.C] * nucl_freq[Seq.T] / fY;
+            double K3 = 2 * ( fR * fY - nucl_freq[Seq.A] * nucl_freq[Seq.G] * fY / fR - nucl_freq[Seq.C] * nucl_freq[Seq.T] * fR / fY);
+            AG = 1 - AG / K1 - 0.5 * tv / fR;
+            CT = 1 - CT / K2 - 0.5 * tv / fY;
+            tv = 1 - 0.5 * tv / fY / fR;
+            dist = -K1 * log(AG) - K2 * log(CT) - K3 * log(tv);
+        }
+        return dist;
+    }
+
+
+    private double[][] countPairwiseNucl(int[] s1, int[] s2) {
+        double nucl_pair_counts[][] = new double[4][4];
+        if ("resolve".equals(ambiguityHandling)) 
+            return countNucl_resolve(s1, s2, nucl_pair_counts);
+        else if ("average".equals(ambiguityHandling))
+            return countNucl_average(s1, s2, nucl_pair_counts);
+        else if ("gapmm".equals(ambiguityHandling))
+            return countNucl_gapmm(s1, s2, nucl_pair_counts);
+        else if ("skip".equals(ambiguityHandling))
+            return countNucl_skip(s1, s2, nucl_pair_counts);
+        else
+        {
+            System.out.println("Unknown ambiguity handling method, using 'resolve'");
+            return countNucl_resolve(s1, s2, nucl_pair_counts);
+        }
+    }
+
+
+    private static double[] getNuclCounts(double[][] nucl_pair_counts) {
+        double[] nucl_freq = new double[4];
+        for(int i=0; i<4; ++i) {
+            for(int j=0; j<4; ++j) {
+                nucl_freq[i] += nucl_pair_counts[i][j];
+                nucl_freq[j] += nucl_pair_counts[i][j];
+            }
+        }
+        return nucl_freq;
+    }
+
+
+    private double[][] countNucl_resolve(int[] s1, int[] s2, double[][]nucl_pair_counts) {
+        int L = Math.min(s1.length, s2.length);
+        for(int i=0; i<L; i++) {
             int c1 = s1[i];
             int c2 = s2[i];
-            if(c1==Seq.N || c2==Seq.N) continue;
-            ++nucl_counts[c1];
-            ++nucl_counts[c2];
-            ++nucl_pair_count[c1][c2];
-            ++nucl_pair_count[c2][c1];
-            ++total_non_gap;
+            if (c1 == 17 && c2 == 17) continue;                 // both are gaps; continue
+            if (c1 < 4 && c2 < 4) {                             // Neither is ambiguous
+                nucl_pair_counts[c1][c2]++;
+            }
+            else {
+                if (c1 < 4) {                                   // if c1 is not ambiguous, c2 is
+                    if (resolutionsCount[c2] > 0) {             // if c2 is not a gap
+                        if (resolutions[c2][c1] == 1) {         // if c2 can resolve to c1               
+                            nucl_pair_counts[c1][c1]++;          // Resolve c2 to c1 
+                            continue;
+                        }
+                        for (int j=0; j<4; j++) {               // else: average over all possible resolutions
+                            if (resolutions[c2][j] == 1) {
+                                nucl_pair_counts[c1][j] += resolutionsCount[c2];
+                            }
+                        }
+                    }
+                }
+                else if (c2 < 4){                               // c2 is not ambiguous, c1 is
+                    if (resolutionsCount[c1] > 0) {
+                        if (resolutions[c1][c2] == 1) {
+                            nucl_pair_counts[c2][c2]++;
+                            continue;
+                        }
+                        for (int j=0; j<4; j++) {
+                            if (resolutions[c1][j] == 1) {
+                                nucl_pair_counts[j][c2] += resolutionsCount[c1];
+                            }
+                        }
+                    }
+                } 
+                else {                                          // Both c1 and c2 are ambiguous
+                    double norm = resolutionsCount[c1] * resolutionsCount[c2]; 
+                    if (norm > 0.0) { // if both are not gaps
+                        int matched = 0;
+                        boolean[] positive_match = new boolean[4];
+                        for (int j=0; j<4; j++) { 
+                            if (resolutions[c1][j] == 1 && resolutions[c2][j] == 1) {
+                                positive_match[j] = true;
+                                matched++;
+                            }
+                        }
+                        if (matched > 0) {
+                            double norm2 = 1.0/matched;
+                            for (int k=0; k<4; k++) {
+                                if (positive_match[k]) {
+                                    nucl_pair_counts[k][k] += norm2;
+                                }
+                            }
+                            continue;
+                        }
+                        for (int j=0; j<4; j++) {
+                            if (resolutions[c1][j] == 1) {
+                                for (int k=0; k<4; k++) {
+                                    if (resolutions[c2][k] == 1) {
+                                        nucl_pair_counts[j][k] += norm;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } 
+            }
         }
-        double[] nucl_freq = new double[4];
-        for(int i=0; i<4; ++i) nucl_freq[i] = (double) nucl_counts[i]/2/total_non_gap;
-        double p1 = (double) nucl_pair_count[Seq.A][Seq.G]/total_non_gap;
-        double p2 = (double) nucl_pair_count[Seq.C][Seq.T]/total_non_gap;
-        double q = ((double) nucl_pair_count[Seq.A][Seq.C]+nucl_pair_count[Seq.A][Seq.T]+nucl_pair_count[Seq.C][Seq.G]+
-                nucl_pair_count[Seq.G][Seq.T])/total_non_gap;
-        double g_r = nucl_freq[Seq.A]+nucl_freq[Seq.G];
-        double g_y = nucl_freq[Seq.C]+nucl_freq[Seq.T];
-        boolean useK2P = false;
-        for(int i=0; i<4; ++i) if (nucl_freq[i] == 0) useK2P = true;
-
-        double k_ag = nucl_freq[Seq.A]*nucl_freq[Seq.G]/g_r;
-        double k_tc = nucl_freq[Seq.T]*nucl_freq[Seq.C]/g_y;
-        double k_ry = g_r*g_y;
-
-        double dist;
-
-        if(useK2P) {
-            double l1 = 1.-2.*(p1+p2)-q;
-            double l2 = 1.-2.*q;
-            if(l1>0.&&l2>0.) dist = log(p1)/2-log(p2)/4;
-            else dist=TN_93_MAX_DIST;
-        }
-        else {
-            double l_ag = 1-p1/(2*k_ag)-q/(2*g_r);
-            double l_tc = 1-p2/(2*k_tc)-q/(2*g_y);
-            double l_ry = 1-q/(2*k_ry);
-            if(l_ag>0. && l_tc>0. && l_ry>0.)
-                dist=-2*k_ag*log(l_ag)-2*k_tc*log(l_tc)-2*(k_ry-k_ag*g_y-k_tc*g_r)*log(l_ry);
-            else dist=TN_93_MAX_DIST;
-        }
-        return dist <= 0. ? 0. : dist;
+        return nucl_pair_counts;
     }
+
+
+    private double[][] countNucl_average(int[] s1, int[] s2, double[][] nucl_pair_counts) {
+        int L = Math.min(s1.length, s2.length);
+        for(int i=0; i<L; i++) {
+            int c1 = s1[i];
+            int c2 = s2[i];
+
+            if (c1 == 17 || c2 == 17) continue;   
+
+            if (c1 < 4 && c2 < 4) {
+                nucl_pair_counts[c1][c2]++;
+            }
+            else {
+                if (c1 < 4) {
+                    if (resolutionsCount[c2] > 0) {
+                        for (int j=0; j<4; j++) {
+                            if (resolutions[c2][j] == 1) {
+                                nucl_pair_counts[c1][j] += resolutionsCount[c2];
+                            }
+                        }
+                    }
+                }
+                else if (c2 < 4){
+                    if (resolutionsCount[c1] > 0) {
+                        for (int j=0; j<4; j++) {
+                            if (resolutions[c1][j] == 1) {
+                                nucl_pair_counts[j][c2] += resolutionsCount[c1];
+                            }
+                        }
+                    }
+                } 
+                else {
+                    double norm = resolutionsCount[c1] * resolutionsCount[c2]; 
+                    if (norm > 0.0) {
+                        for (int j=0; j<4; j++) {
+                            if (resolutions[c1][j]==1) {
+                                for (int k=0; k<4; k++) {
+                                    if (resolutions[c2][k]==1) {
+                                        nucl_pair_counts[j][k] += norm;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } 
+            }
+        }
+        return nucl_pair_counts;
+    }
+
+
+    private static double[][] countNucl_gapmm(int[] s1, int[] s2, double[][] nucl_pair_counts) {
+        int L = Math.min(s1.length, s2.length);
+        for (int i = 0; i < L; i++) {
+            int c1 = s1[i];
+            int c2 = s2[i];
+
+            if (c1 == 17 && c2 == 17) continue;
+
+            if (c1 < 4 && c2 < 4) 
+                nucl_pair_counts[c1][c2]++;
+            else {
+                if (c1 == 17 || c2 == 17) {
+                    if (c1 == 17) 
+                        c1 = 15;
+                    else 
+                        c2 = 15;
+                }
+                if (c1 < 4) {
+                    if (resolutionsCount[c2] > 0) {
+                        for (int j=0; j<4; j++) {
+                            if (resolutions[c2][j] == 1) {
+                                nucl_pair_counts[c1][j] += resolutionsCount[c2];
+                            }
+                        }
+                    }
+                }
+                else if (c2 < 4) {
+                    if (resolutionsCount[c1] > 0) {
+                        for (int j=0; j<4; j++) {
+                            if (resolutions[c1][j] == 1) {
+                                nucl_pair_counts[j][c2] += resolutionsCount[c1];
+                            }
+                        }
+                    }
+                }
+                else {
+                    double norm = resolutionsCount[c1] * resolutionsCount[c2]; 
+                    if (norm > 0.0) {
+                        for (int j=0; j<4; j++) {
+                            if (resolutions[c1][j]==1) {
+                                for (int k=0; k<4; k++) {
+                                    if (resolutions[c2][k]==1) {
+                                        nucl_pair_counts[j][k] += norm;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return nucl_pair_counts;
+    }
+
+
+    private static double[][] countNucl_skip(int[] s1, int[] s2, double[][] nucl_pair_counts) {
+        int L = Math.min(s1.length, s2.length);
+
+        for (int i = 0; i < L; i++) {
+            int c1 = s1[i];
+            int c2 = s2[i];
+
+            if (c1 < 4 && c2 < 4) {
+                nucl_pair_counts[c1][c2]++;
+            }
+        }
+        return nucl_pair_counts;
+    }
+
 
     public static LinkedList<Seq> read_seqs(Scanner sc) {
         LinkedList<Seq> seqs = new LinkedList<Seq>();
@@ -142,6 +406,7 @@ public class TN93 extends Observable {
         if(name.length()!=0) seqs.add(new Seq(name, seq));
         return seqs;
     }
+
 
     private static LinkedList<Seq> read_fasta(File inputFile) throws FileNotFoundException {
         Scanner sc = new Scanner(inputFile);

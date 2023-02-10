@@ -4,15 +4,28 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Seq {
-    final static int A=0,C=1,G=2,T=3,N=4;
+    final static int A=0, C=1, G=2, T=3, Gap=17;
     static Map<Character, Integer> nucl;
     static {
         nucl = new HashMap<Character, Integer>();
-        nucl.put('A', A);
-        nucl.put('C', C);
-        nucl.put('G', G);
-        nucl.put('T', T);
-        nucl.put('N', N);
+        nucl.put('A', 0);
+        nucl.put('C', 1);
+        nucl.put('G', 2);
+        nucl.put('T', 3);
+        nucl.put('U', 4);
+        nucl.put('R', 5);
+        nucl.put('Y', 6);
+        nucl.put('S', 7);
+        nucl.put('W', 8);
+        nucl.put('K', 9);
+        nucl.put('M', 10); 
+        nucl.put('B', 11); 
+        nucl.put('D', 12); 
+        nucl.put('H', 13); 
+        nucl.put('V', 14); 
+        nucl.put('N', 15); 
+        nucl.put('?', 16);
+        nucl.put('-', 17); 
     }
 
     private String name;

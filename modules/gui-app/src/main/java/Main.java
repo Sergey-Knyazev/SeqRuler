@@ -26,6 +26,9 @@ public class Main implements Runnable{
     @CommandLine.Option(names={"-t", "--edge-threshold"},
             description="edges above the threshold are not reported in output")
     private String edgeThresholdString;
+    @CommandLine.Option(names={"-a", "--ambiguity", "--ambiguities"},
+            description="How to handle ambiguous nucleotides. One of [resolve, average, gapmm, skip]")
+    private String ambiguityHandling;
 
     public void run() {
         if(is_server) {
@@ -47,6 +50,9 @@ public class Main implements Runnable{
             tn93.setEdgeThreshold(Float.parseFloat(edgeThresholdString));
             tn93.setInputFile(inputFile);
             tn93.setOutputFile(outputFile);
+            System.out.println(ambiguityHandling);
+            tn93.setAmbiguityHandling(ambiguityHandling);
+            // tn93.setAmbiguityHandling("resolve");
             tn93.tn93Fasta();
         }
     }
@@ -90,6 +96,9 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
     private JButton inBut, outBut, runBut;
     private JTextField fastaTextField, edgeListTextField, edgeThresholdField;
     private JProgressBar progress;
+    private ButtonGroup ambiguityHandlingGroup;
+    private JRadioButton resolveBut, averageBut, gapmmBut, skipBut;
+    private String ambiguityHandling;
 
     private File fastaFile, edgeListFile;
     private TN93 tn93;
@@ -102,6 +111,19 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
         inBut = new JButton("Load Fasta");
         outBut = new JButton("Save as: Edge List CSV File");
         runBut = new JButton("Run TN93");
+
+        ambiguityHandlingGroup = new ButtonGroup();
+        resolveBut = new JRadioButton("Resolve");
+        averageBut = new JRadioButton("Average");
+        gapmmBut = new JRadioButton("Gapmm");
+        skipBut = new JRadioButton("Skip");
+
+        ambiguityHandlingGroup.add(resolveBut);
+        ambiguityHandlingGroup.add(averageBut);
+        ambiguityHandlingGroup.add(gapmmBut);
+        ambiguityHandlingGroup.add(skipBut);
+
+        resolveBut.setSelected(true);
 
         fastaTextField = new JTextField(20);
         edgeListTextField = new JTextField(20);
@@ -117,16 +139,28 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
         outBut.addActionListener(this);
         runBut.addActionListener(this);
 
-        setLayout(new GridLayout(4, 2));
+        setLayout(new BorderLayout());
 
-        add(new JLabel("Edge length threshold:", JLabel.RIGHT));
-        add(edgeThresholdField);
-        add(fastaTextField);
-        add(inBut);
-        add(edgeListTextField);
-        add(outBut);
-        add(progress);
-        add(runBut);
+        JPanel fastaPanel = new JPanel();
+        fastaPanel.setLayout(new GridLayout(4, 2));
+        fastaPanel.add(new JLabel("Maximum edge length:", JLabel.RIGHT));
+        fastaPanel.add(edgeThresholdField);
+        fastaPanel.add(fastaTextField);
+        fastaPanel.add(inBut);
+        fastaPanel.add(edgeListTextField);
+        fastaPanel.add(outBut);
+        fastaPanel.add(progress);
+        fastaPanel.add(runBut);
+        add(fastaPanel, BorderLayout.NORTH);
+
+        JPanel ambigsPanel = new JPanel();        
+        ambigsPanel.setLayout(new GridLayout(1, 4));
+        ambigsPanel.add(resolveBut);
+        ambigsPanel.add(averageBut);
+        ambigsPanel.add(gapmmBut);
+        ambigsPanel.add(skipBut);
+        ambigsPanel.setBorder(BorderFactory.createTitledBorder("Ambiguity Handling"));
+        add(ambigsPanel, BorderLayout.SOUTH);
     }
 
     public void actionPerformed(ActionEvent e) {
@@ -156,13 +190,25 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
                 showMessageDialog(null, "Specify an output file using Save as!");
                 return;
             }
-            if(!parseEdgeThershold()) {
+            if(!parseEdgeThreshold()) {
                 showMessageDialog(null, "Threshold should be number!");
             }
             inactivatePanel();
             tn93.setEdgeThreshold(edgeThreshold);
             tn93.setInputFile(fastaFile);
             tn93.setOutputFile(edgeListFile);
+            
+            if(resolveBut.isSelected()) 
+                tn93.setAmbiguityHandling("resolve");
+            else if(averageBut.isSelected()) 
+                tn93.setAmbiguityHandling("average");
+            else if(gapmmBut.isSelected()) 
+                tn93.setAmbiguityHandling("gapmm");
+            else if(skipBut.isSelected()) 
+                tn93.setAmbiguityHandling("skip");
+            else 
+                tn93.setAmbiguityHandling("resolve");
+            
             SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
                 @Override
                 protected Void doInBackground() {
@@ -189,7 +235,7 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
         outBut.setEnabled(true);
     }
 
-    private boolean parseEdgeThershold() {
+    private boolean parseEdgeThreshold() {
         try {
             edgeThreshold = Float.parseFloat(edgeThresholdField.getText());
             return true;
@@ -200,6 +246,7 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
     public void update(Observable obj, Object arg) {
         this.progress.setValue((Integer) arg);
     }
+
 }
 
 class StatusPanel extends JPanel {
