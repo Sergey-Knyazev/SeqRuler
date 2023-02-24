@@ -5,7 +5,7 @@ GUI interface for calculating TN93 distance between all sequences in the input f
 ## Download or Compilation
 
 - Download:
-[tn93.jar](https://github.com/CDCgov/SeqRuler/releases/download/v1.0/tn93.jar)
+[tn93.jar](https://github.com/CDCgov/SeqRuler/releases/download/v1.1/tn93.jar)
 
 
 - Compilation:
