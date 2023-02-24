@@ -29,6 +29,9 @@ public class Main implements Runnable{
     @CommandLine.Option(names={"-a", "--ambiguity", "--ambiguities"},
             description="How to handle ambiguous nucleotides. One of [resolve, average, gapmm, skip]")
     private String ambiguityHandling;
+    @CommandLine.Option(names={"-g", "--fraction"},
+            description="Maximum allowable fraction of ambiguities allowed for 'resolve' mode. If exceeded, use 'average' mode.")
+    private float max_ambiguity_fraction;
 
     public void run() {
         if(is_server) {
@@ -52,7 +55,7 @@ public class Main implements Runnable{
             tn93.setOutputFile(outputFile);
             System.out.println(ambiguityHandling);
             tn93.setAmbiguityHandling(ambiguityHandling);
-            // tn93.setAmbiguityHandling("resolve");
+            tn93.setMaxAmbiguityFraction(max_ambiguity_fraction);
             tn93.tn93Fasta();
         }
     }

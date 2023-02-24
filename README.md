@@ -24,7 +24,14 @@ java -jar tn93.jar
 ```bash
 java -jar tn93.jar -h
 
-Usage: tn93 [-hsV] [-i=FILE] [-o=FILE] [-t=<edgeThresholdString>]
+Usage: tn93 [-hsV] [-a=<ambiguityHandling>] [-g=<max_ambiguity_fraction>]
+            [-i=FILE] [-o=FILE] [-t=<edgeThresholdString>]
+  -a, --ambiguity, --ambiguities=<ambiguityHandling>
+                       How to handle ambiguous nucleotides. One of [resolve,
+                         average, gapmm, skip]
+  -g, --fraction=<max_ambiguity_fraction>
+                       Maximum allowable fraction of ambiguities allowed for
+                         'resolve' mode. If exceeded, use 'average' mode.
   -h, --help           Show this help message and exit.
   -i, --inFile=FILE    input file with sequences
   -o, --outFile=FILE   output file with distances
