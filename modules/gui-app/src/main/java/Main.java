@@ -102,6 +102,8 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
     private ButtonGroup ambiguityHandlingGroup;
     private JRadioButton resolveBut, averageBut, gapmmBut, skipBut;
     private String ambiguityHandling;
+    private JTextField maxAmbiguityFractionField;
+    private JLabel maxAmbiguityFractionLabel;
 
     private File fastaFile, edgeListFile;
     private TN93 tn93;
@@ -162,11 +164,61 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
         ambigsPanel.add(averageBut);
         ambigsPanel.add(gapmmBut);
         ambigsPanel.add(skipBut);
+
         ambigsPanel.setBorder(BorderFactory.createTitledBorder("Ambiguity Handling"));
-        add(ambigsPanel, BorderLayout.SOUTH);
+        add(ambigsPanel, BorderLayout.CENTER);
+
+        JPanel maxAmbigsPanel = new JPanel();
+        maxAmbigsPanel.setLayout(new GridLayout(1, 2));
+        maxAmbiguityFractionLabel = new JLabel("Maximum fraction of ambiguities to resolve:", JLabel.RIGHT);
+        maxAmbigsPanel.add(maxAmbiguityFractionLabel);
+        maxAmbiguityFractionField = new JTextField("0.05");
+        maxAmbigsPanel.add(maxAmbiguityFractionField);
+        add(maxAmbigsPanel, BorderLayout.SOUTH);
+        
+        resolveBut.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                maxAmbiguityFractionField.setEnabled(true);
+                maxAmbiguityFractionField.setVisible(true);
+                maxAmbiguityFractionLabel.setEnabled(true);
+                maxAmbiguityFractionLabel.setVisible(true);
+            }
+        });
+
+        averageBut.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                maxAmbiguityFractionField.setEnabled(false);
+                maxAmbiguityFractionField.setVisible(false);
+                maxAmbiguityFractionLabel.setEnabled(false);
+                maxAmbiguityFractionLabel.setVisible(false);
+            }
+        });
+
+        gapmmBut.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                maxAmbiguityFractionField.setEnabled(false);
+                maxAmbiguityFractionField.setVisible(false);
+                maxAmbiguityFractionLabel.setEnabled(false);
+                maxAmbiguityFractionLabel.setVisible(false);
+            }
+        });
+
+        skipBut.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                maxAmbiguityFractionField.setEnabled(false);
+                maxAmbiguityFractionField.setVisible(false);
+                maxAmbiguityFractionLabel.setEnabled(false);
+                maxAmbiguityFractionLabel.setVisible(false);
+            }
+        });
     }
 
     public void actionPerformed(ActionEvent e) {
+        System.out.println(e);
         if("loadFasta".equals(e.getActionCommand())) {
             JFileChooser fileopen =  new JFileChooser();
             FileNameExtensionFilter filter = new FileNameExtensionFilter("FASTA FILES", "fa", "fas", "fasta");
@@ -201,17 +253,22 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
             tn93.setInputFile(fastaFile);
             tn93.setOutputFile(edgeListFile);
             
-            if(resolveBut.isSelected()) 
+            if(resolveBut.isSelected()) {
                 tn93.setAmbiguityHandling("resolve");
-            else if(averageBut.isSelected()) 
-                tn93.setAmbiguityHandling("average");
-            else if(gapmmBut.isSelected()) 
-                tn93.setAmbiguityHandling("gapmm");
-            else if(skipBut.isSelected()) 
-                tn93.setAmbiguityHandling("skip");
-            else 
-                tn93.setAmbiguityHandling("resolve");
-            
+                // maxAmbiguityFractionField.setVisible(true);
+                // maxAmbiguityFractionField.setEnabled(true);
+            } else {
+                // maxAmbiguityFractionField.setVisible(false);
+                // maxAmbiguityFractionField.setEnabled(false);
+                if(averageBut.isSelected()) 
+                    tn93.setAmbiguityHandling("average");
+                else if(gapmmBut.isSelected()) 
+                    tn93.setAmbiguityHandling("gapmm");
+                else if(skipBut.isSelected()) 
+                    tn93.setAmbiguityHandling("skip");
+                else 
+                    tn93.setAmbiguityHandling("resolve");
+            }
             SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
                 @Override
                 protected Void doInBackground() {
