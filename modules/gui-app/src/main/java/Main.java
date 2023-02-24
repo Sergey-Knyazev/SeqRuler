@@ -218,7 +218,6 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
     }
 
     public void actionPerformed(ActionEvent e) {
-        System.out.println(e);
         if("loadFasta".equals(e.getActionCommand())) {
             JFileChooser fileopen =  new JFileChooser();
             FileNameExtensionFilter filter = new FileNameExtensionFilter("FASTA FILES", "fa", "fas", "fasta");
@@ -255,20 +254,16 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
             
             if(resolveBut.isSelected()) {
                 tn93.setAmbiguityHandling("resolve");
-                // maxAmbiguityFractionField.setVisible(true);
-                // maxAmbiguityFractionField.setEnabled(true);
-            } else {
-                // maxAmbiguityFractionField.setVisible(false);
-                // maxAmbiguityFractionField.setEnabled(false);
-                if(averageBut.isSelected()) 
-                    tn93.setAmbiguityHandling("average");
-                else if(gapmmBut.isSelected()) 
-                    tn93.setAmbiguityHandling("gapmm");
-                else if(skipBut.isSelected()) 
-                    tn93.setAmbiguityHandling("skip");
-                else 
-                    tn93.setAmbiguityHandling("resolve");
-            }
+                tn93.setMaxAmbiguityFraction(Double.parseDouble(maxAmbiguityFractionField.getText()));
+            } else if(averageBut.isSelected()) 
+                tn93.setAmbiguityHandling("average");
+            else if(gapmmBut.isSelected()) 
+                tn93.setAmbiguityHandling("gapmm");
+            else if(skipBut.isSelected()) 
+                tn93.setAmbiguityHandling("skip");
+            else 
+                tn93.setAmbiguityHandling("resolve");
+        
             SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
                 @Override
                 protected Void doInBackground() {
