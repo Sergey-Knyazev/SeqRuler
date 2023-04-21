@@ -7,14 +7,32 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.Observable;
 
+//Parallelization
+import java.util.concurrent.*;
+
+
 import static java.lang.Math.log;
 
 public class TN93 extends Observable {
-    // private static final double TN_93_MAX_DIST = 1000.;
+    // Used for parallelization
+    private static class Triplet<A, B, C> {
+        final A first;
+        final B second;
+        final C third;
+    
+        public Triplet(A first, B second, C third) {
+            this.first = first;
+            this.second = second;
+            this.third = third;
+        }
+    }
+
+
     private float edgeThreshold = 1;
     private File inputFile;
     private File outputFile;
     private String ambiguityHandling;
+    private int cores = 1;
     private double max_ambiguity_fraction = -1; // -1 means no limit (default)
     private Map<Seq, Double> ambig_fractions = new HashMap<>();
 
@@ -36,6 +54,10 @@ public class TN93 extends Observable {
 
     public void setMaxAmbiguityFraction(double max_ambiguity_fraction) {
         this.max_ambiguity_fraction = max_ambiguity_fraction;
+    }
+
+    public void setCores(int cores) {
+        this.cores = cores;
     }
 
     final static int[][] resolutions = {
@@ -85,7 +107,9 @@ public class TN93 extends Observable {
         PrintWriter f = null;
         try {
             LinkedList<Seq> seqs = read_fasta(inputFile);
+
             double[][] dist = tn93(seqs);
+            System.out.println("Writing output file...");
             f = new PrintWriter(outputFile);
             f.println("Source,Target,Dist");
             for (int i = 1; i < dist.length; ++i) {
@@ -103,16 +127,40 @@ public class TN93 extends Observable {
         }
     }
 
-    public double[][] tn93(LinkedList<Seq> seqs) {
+    public double[][] tn93(LinkedList<Seq> seqs){
         if ("resolve".equals(ambiguityHandling)) {
             ambig_fractions = count_ambiguities(seqs);
         }
+
         double[][] dist = new double[seqs.size()][seqs.size()];
+
+        System.out.println("Creating thread pool with " + cores + " threads...");
+        ExecutorService executor = Executors.newFixedThreadPool(cores);
+        List<Future<Triplet<Integer, Integer, Double>>> futures = new ArrayList<>();
+
+        for (int i = 1; i < dist.length; ++i) {
+            for (int j = 0; j < i; ++ j) {
+                final int row = i;
+                final int col = j;
+                futures.add(executor.submit( () -> {
+                    double d = tn93(seqs.get(row), seqs.get(col));
+                    return new Triplet<>(row, col, d);
+                }));
+            }
+        }
+
         long startTime = System.nanoTime(), estimatedTime;
         int pairs_count = (dist.length * dist.length - dist.length)/2;
         int current_pair = 0;
-        for (int i = 1; i < dist.length; ++i) {
-            for (int j = 0; j < i; ++j) {
+        for (Future<Triplet<Integer, Integer, Double>> future : futures) {
+                try {
+                    Triplet<Integer, Integer, Double> result = future.get();         
+                    dist[result.first][result.second] = dist[result.second][result.first] = result.third;
+                }
+                catch (InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
+                }
+
                 current_pair++;
                 if(current_pair % (pairs_count/100) == 0) {
                     estimatedTime = System.nanoTime() - startTime;
@@ -123,9 +171,8 @@ public class TN93 extends Observable {
                     setChanged();
                     notifyObservers(percCompleted);
                 }
-                dist[i][j] = dist[j][i] = tn93(seqs.get(i), seqs.get(j));
-            }
         }
+        executor.shutdown();
         setChanged();
         notifyObservers(100);
         return dist;

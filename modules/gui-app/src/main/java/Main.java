@@ -32,6 +32,9 @@ public class Main implements Runnable{
     @CommandLine.Option(names={"-g", "--fraction"},
             description="Maximum allowable fraction of ambiguities allowed for 'resolve' mode. If exceeded, use 'average' mode.")
     private float max_ambiguity_fraction;
+    @CommandLine.Option(names={"-c", "--cores"},
+            description="Number of cores to use")
+    private int cores;
 
     public void run() {
         if(is_server) {
@@ -56,6 +59,7 @@ public class Main implements Runnable{
             System.out.println(ambiguityHandling);
             tn93.setAmbiguityHandling(ambiguityHandling);
             tn93.setMaxAmbiguityFraction(max_ambiguity_fraction);
+            tn93.setCores(cores);
             tn93.tn93Fasta();
         }
     }
