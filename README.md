@@ -29,7 +29,7 @@ Usage: tn93 [-hsV] [-a=<ambiguityHandling>] [-g=<max_ambiguity_fraction>]
   -a, --ambiguity, --ambiguities=<ambiguityHandling>
                         How to handle ambiguous nucleotides. One of [resolve,
                           average, gapmm, skip]
-  -c, --cores=<cores>   Number of cores to use
+  -c, --cores=<cores>   Number of cores to use for parallel processing.
   -g, --fraction=<max_ambiguity_fraction>
                         Maximum allowable fraction of ambiguities allowed for
                           'resolve' mode. If exceeded, use 'average' mode.
