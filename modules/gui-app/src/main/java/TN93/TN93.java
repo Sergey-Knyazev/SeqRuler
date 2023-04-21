@@ -107,7 +107,6 @@ public class TN93 extends Observable {
         PrintWriter f = null;
         try {
             LinkedList<Seq> seqs = read_fasta(inputFile);
-
             double[][] dist = tn93(seqs);
             System.out.println("Writing output file...");
             f = new PrintWriter(outputFile);

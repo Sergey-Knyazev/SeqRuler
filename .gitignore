@@ -34,3 +34,12 @@ jetty/
 #build folder
 target/
 
+
+*.csv
+
+!test-data/
+
+*.fasta
+
+
+
