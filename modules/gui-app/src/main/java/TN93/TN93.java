@@ -126,7 +126,9 @@ public class TN93 extends Observable {
             ambig_fractions = count_ambiguities(seqs);
         }
 
-
+        if (cores >= seqs.size()) {
+            cores = seqs.size()-1;
+        }
 
         System.out.println("Creating thread pool with " + cores + " threads...");
         ExecutorService executor = Executors.newFixedThreadPool(cores);
@@ -143,7 +145,6 @@ public class TN93 extends Observable {
 
         long pairs_count = (seqs.size() * seqs.size() - seqs.size())/2;
         long current_pair = 0;
-        int last_percent = 0;
         long startTime = System.nanoTime(), estimatedTime;
 
         System.out.println("Submitting jobs...");
@@ -154,13 +155,15 @@ public class TN93 extends Observable {
                 final int col = j;
                 final Seq seq1 = seqs.get(row);
                 final Seq seq2 = seqs.get(col);
+                
                 futures.add(executor.submit( () -> {
                     double d = tn93(seq1, seq2);
-                    writerRef.get().println(String.format("%s,%s,%f", seq1.getName(), seq2.getName(), d));
+                    if (d < this.edgeThreshold)
+                        writerRef.get().println(String.format("%s,%s,%f", seq1.getName(), seq2.getName(), d));
                     return new Triplet<>(row, col, d);
                 }));
-                
-                if (futures.size() > 1000 || (i == seqs.size() - 1 && j == i - 1)) {
+
+                if (futures.size() > 1000 || pairs_count < 1000 ) {
                     for (Future<Triplet<Integer, Integer, Double>> future : futures) {
                         try {
                             future.get();         
@@ -170,7 +173,8 @@ public class TN93 extends Observable {
                         }
         
                         current_pair++;
-                        if (current_pair * 100 / pairs_count > last_percent) {
+                        // There is some issue here when input has exactly 2 sequences
+                        if (current_pair % (pairs_count / 100) == 0 ) {
                             estimatedTime = System.nanoTime() - startTime;
                             int percCompleted = (int) (current_pair*100/pairs_count);
                             System.out.print(String.format("%d%% completed in ", percCompleted));
@@ -178,7 +182,6 @@ public class TN93 extends Observable {
                             System.out.println(" sec                                ");
                             setChanged();
                             notifyObservers(percCompleted);
-                            last_percent = percCompleted;
                         } 
                     }
                     futures.clear();
@@ -186,10 +189,32 @@ public class TN93 extends Observable {
             }
         }
 
+        for (Future<Triplet<Integer, Integer, Double>> future : futures) {
+            try {
+                future.get();         
+            }
+            catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+
+            current_pair++;
+            if (current_pair % (pairs_count / 100) == 0 || pairs_count < 100) {
+                estimatedTime = System.nanoTime() - startTime;
+                int percCompleted = (int) (current_pair*100/pairs_count);
+                System.out.print(String.format("%d%% completed in ", percCompleted));
+                System.out.print(TimeUnit.SECONDS.convert(estimatedTime, TimeUnit.NANOSECONDS));
+                System.out.println(" sec                                ");
+                setChanged();
+                notifyObservers(percCompleted);
+            } 
+        }
+
         executor.shutdown();
+        writerRef.get().flush();
         writerRef.get().close();
         setChanged();
         notifyObservers(100);
+        System.out.println("TESTTESTTESTTESTTESTTESTTESTTESTTESTTESTTEST");
         return;
     }
 

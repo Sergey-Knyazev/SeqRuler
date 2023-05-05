@@ -87,7 +87,7 @@ public class Main implements Runnable{
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         //Create and set up the content pane.
-        TN93_Panel panel = new TN93_Panel();
+        TN93_Panel panel = new TN93_Panel(frame);
         mainPane.add(panel);
         panel.setOpaque(true); //content panes must be opaque
         frame.setContentPane(mainPane);
@@ -105,15 +105,18 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
     private JProgressBar progress;
     private ButtonGroup ambiguityHandlingGroup;
     private JRadioButton resolveBut, averageBut, gapmmBut, skipBut;
-    private String ambiguityHandling;
     private JTextField maxAmbiguityFractionField;
     private JLabel maxAmbiguityFractionLabel;
+    private JCheckBox useMaxCoresCheckbox;
+    private JTextField numCoresField;
 
     private File fastaFile, edgeListFile;
     private TN93 tn93;
+    private JFrame frame;
 
 
-    TN93_Panel() {
+    TN93_Panel(JFrame frame) {
+        this.frame = frame;
         tn93 = new TN93();
         tn93.addObserver(this);
 
@@ -162,63 +165,78 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
         fastaPanel.add(runBut);
         add(fastaPanel, BorderLayout.NORTH);
 
-        JPanel ambigsPanel = new JPanel();        
-        ambigsPanel.setLayout(new GridLayout(1, 4));
-        ambigsPanel.add(resolveBut);
-        ambigsPanel.add(averageBut);
-        ambigsPanel.add(gapmmBut);
-        ambigsPanel.add(skipBut);
-
+        JPanel ambigsPanel = new JPanel();   
+        ambigsPanel.setLayout(new GridLayout(2, 1));
         ambigsPanel.setBorder(BorderFactory.createTitledBorder("Ambiguity Handling"));
-        add(ambigsPanel, BorderLayout.CENTER);
+
+        JPanel radioButtonsPanel = new JPanel();
+        radioButtonsPanel.setLayout(new GridLayout(1, 4));
+        radioButtonsPanel.add(resolveBut);
+        radioButtonsPanel.add(averageBut);
+        radioButtonsPanel.add(gapmmBut);
+        radioButtonsPanel.add(skipBut);
+        ambigsPanel.add(radioButtonsPanel, BorderLayout.NORTH);
 
         JPanel maxAmbigsPanel = new JPanel();
         maxAmbigsPanel.setLayout(new GridLayout(1, 2));
-        maxAmbiguityFractionLabel = new JLabel("Maximum fraction of ambiguities to resolve:", JLabel.RIGHT);
+        maxAmbiguityFractionLabel = new JLabel("Maximum ambiguity fraction: ", JLabel.CENTER);
         maxAmbigsPanel.add(maxAmbiguityFractionLabel);
         maxAmbiguityFractionField = new JTextField("0.05");
-        maxAmbigsPanel.add(maxAmbiguityFractionField);
-        add(maxAmbigsPanel, BorderLayout.SOUTH);
+        maxAmbigsPanel.add(maxAmbiguityFractionField, BorderLayout.SOUTH);
         
+        ambigsPanel.add(maxAmbigsPanel);
+        add(ambigsPanel, BorderLayout.CENTER);
+
         resolveBut.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                maxAmbiguityFractionField.setEnabled(true);
-                maxAmbiguityFractionField.setVisible(true);
-                maxAmbiguityFractionLabel.setEnabled(true);
-                maxAmbiguityFractionLabel.setVisible(true);
+                ambigsPanel.add(maxAmbigsPanel);
+                ambigsPanel.setLayout(new GridLayout(2, 1));
+                ambigsPanel.revalidate();
+                ambigsPanel.repaint();
+                frame.pack();
             }
         });
 
-        averageBut.addActionListener(new ActionListener() {
+        ActionListener hideMaxAmbiguityListener = new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                maxAmbiguityFractionField.setEnabled(false);
-                maxAmbiguityFractionField.setVisible(false);
-                maxAmbiguityFractionLabel.setEnabled(false);
-                maxAmbiguityFractionLabel.setVisible(false);
+                ambigsPanel.remove(maxAmbigsPanel);
+                ambigsPanel.setLayout(new GridLayout(1, 1));
+                ambigsPanel.revalidate();
+                ambigsPanel.repaint();
+                frame.pack();
+            }
+        };
+
+        averageBut.addActionListener(hideMaxAmbiguityListener);
+        gapmmBut.addActionListener(hideMaxAmbiguityListener);
+        skipBut.addActionListener(hideMaxAmbiguityListener);
+
+        JPanel coresPanel = new JPanel();
+        coresPanel.setLayout(new GridLayout(1, 2));
+        useMaxCoresCheckbox = new JCheckBox("Use all available cores", true);
+        numCoresField = new JTextField(Integer.toString(Runtime.getRuntime().availableProcessors()));
+        numCoresField.setEnabled(false);
+
+        useMaxCoresCheckbox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (useMaxCoresCheckbox.isSelected()) {
+                    numCoresField.setEnabled(false);
+                    numCoresField.setText(Integer.toString(Runtime.getRuntime().availableProcessors()));
+                } else {
+                    numCoresField.setEnabled(true);
+                }
             }
         });
 
-        gapmmBut.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                maxAmbiguityFractionField.setEnabled(false);
-                maxAmbiguityFractionField.setVisible(false);
-                maxAmbiguityFractionLabel.setEnabled(false);
-                maxAmbiguityFractionLabel.setVisible(false);
-            }
-        });
+        coresPanel.add(new JLabel("Number of cores to use:", JLabel.CENTER));
+        coresPanel.add(numCoresField);
+        coresPanel.add(useMaxCoresCheckbox);
 
-        skipBut.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                maxAmbiguityFractionField.setEnabled(false);
-                maxAmbiguityFractionField.setVisible(false);
-                maxAmbiguityFractionLabel.setEnabled(false);
-                maxAmbiguityFractionLabel.setVisible(false);
-            }
-        });
+        coresPanel.setBorder(BorderFactory.createTitledBorder("Processing"));
+        add(coresPanel, BorderLayout.SOUTH);
     }
 
     public void actionPerformed(ActionEvent e) {
@@ -277,6 +295,16 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
                 tn93.setAmbiguityHandling("skip");
             else 
                 tn93.setAmbiguityHandling("resolve");
+
+            if(useMaxCoresCheckbox.isSelected()) {
+                tn93.setCores(Runtime.getRuntime().availableProcessors());
+            } else {
+                try {
+                    tn93.setCores(Integer.parseInt(numCoresField.getText()));
+                } catch (NumberFormatException ex) {
+                    showMessageDialog(null, "Number of cores should be number!");
+                }
+            }
         
             SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
                 @Override
