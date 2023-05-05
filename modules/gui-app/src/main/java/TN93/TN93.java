@@ -112,15 +112,6 @@ public class TN93 extends Observable {
             ArrayList<Seq> seqs = read_fasta(inputFile);
             System.out.println("Calculating distances...");
             tn93(seqs);
-            // System.out.println("Writing output file...");
-            // f = new PrintWriter(outputFile);
-            // f.println("Source,Target,Dist");
-            // for (int i = 1; i < dist.length; ++i) {
-            //     for (int j = 0; j < i; ++j) {
-            //         if (dist[i][j] <= edgeThreshold) f.println(
-            //                 String.format("%s,%s,%f", seqs.get(i).getName(), seqs.get(j).getName(), dist[i][j]));
-            //     }
-            // }
         }
         catch(FileNotFoundException e) {
             e.printStackTrace();
@@ -134,9 +125,12 @@ public class TN93 extends Observable {
         if ("resolve".equals(ambiguityHandling)) {
             ambig_fractions = count_ambiguities(seqs);
         }
-        System.out.println("Setting up Print Writer...");
-        // double[][] dist = new double[seqs.size()][seqs.size()];
 
+
+
+        System.out.println("Creating thread pool with " + cores + " threads...");
+        ExecutorService executor = Executors.newFixedThreadPool(cores);
+        List<Future<Triplet<Integer, Integer, Double>>> futures = new ArrayList<>();
         AtomicReference<PrintWriter> writerRef = new AtomicReference<>();
         try {
             writerRef.set(new PrintWriter(outputFile));
@@ -146,15 +140,11 @@ public class TN93 extends Observable {
 
         writerRef.get().println("Source,Target,Distance");
 
-        System.out.println("Creating thread pool with " + cores + " threads...");
-        ExecutorService executor = Executors.newFixedThreadPool(cores);
-        List<Future<Triplet<Integer, Integer, Double>>> futures = new ArrayList<>();
 
-        
-        long startTime = System.nanoTime(), estimatedTime;
         long pairs_count = (seqs.size() * seqs.size() - seqs.size())/2;
         long current_pair = 0;
         int last_percent = 0;
+        long startTime = System.nanoTime(), estimatedTime;
 
         System.out.println("Submitting jobs...");
         for (int i = 1; i < seqs.size(); ++i) {
@@ -169,7 +159,8 @@ public class TN93 extends Observable {
                     writerRef.get().println(String.format("%s,%s,%f", seq1.getName(), seq2.getName(), d));
                     return new Triplet<>(row, col, d);
                 }));
-                if (futures.size() > 1000) {
+                
+                if (futures.size() > 1000 || (i == seqs.size() - 1 && j == i - 1)) {
                     for (Future<Triplet<Integer, Integer, Double>> future : futures) {
                         try {
                             future.get();         
@@ -196,6 +187,7 @@ public class TN93 extends Observable {
         }
 
         executor.shutdown();
+        writerRef.get().close();
         setChanged();
         notifyObservers(100);
         return;

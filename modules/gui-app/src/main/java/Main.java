@@ -223,19 +223,29 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
 
     public void actionPerformed(ActionEvent e) {
         if("loadFasta".equals(e.getActionCommand())) {
-            JFileChooser fileopen =  new JFileChooser();
-            FileNameExtensionFilter filter = new FileNameExtensionFilter("FASTA FILES", "fa", "fas", "fasta");
-            fileopen.addChoosableFileFilter(filter);
-            if(JFileChooser.APPROVE_OPTION == fileopen.showDialog(null, "Open Fasta file")) {
-                fastaFile = fileopen.getSelectedFile();
+            FileDialog fileDialog = new FileDialog(new Frame(), "Open Fasta file", FileDialog.LOAD);
+            fileDialog.setFilenameFilter((dir, name) -> name.endsWith(".fa") || name.endsWith(".fas") || name.endsWith(".fasta"));
+            fileDialog.setVisible(true);
+        
+            String selectedFileDirectory = fileDialog.getDirectory();
+            String selectedFileName = fileDialog.getFile();
+        
+            if (selectedFileDirectory != null && selectedFileName != null) {
+                fastaFile = new File(selectedFileDirectory, selectedFileName);
                 fastaTextField.setText(fastaFile.getName());
             }
         }
-        else if("specifyEdgeListFile".equals(e.getActionCommand())) {
-            JFileChooser fileopen =  new JFileChooser();
-            //fileopen.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-            if(JFileChooser.APPROVE_OPTION == fileopen.showDialog(null, "Save as: Edge List CSV File")) {
-                edgeListFile = fileopen.getSelectedFile();
+        
+        else if ("specifyEdgeListFile".equals(e.getActionCommand())) {
+            FileDialog fileDialog = new FileDialog(new Frame(), "Save as: Edge List CSV File", FileDialog.SAVE);
+            fileDialog.setFilenameFilter((dir, name) -> name.endsWith(".csv"));
+            fileDialog.setVisible(true);
+        
+            String selectedFileDirectory = fileDialog.getDirectory();
+            String selectedFileName = fileDialog.getFile();
+        
+            if (selectedFileDirectory != null && selectedFileName != null) {
+                edgeListFile = new File(selectedFileDirectory, selectedFileName);
                 edgeListTextField.setText(edgeListFile.getName());
             }
         }
