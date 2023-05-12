@@ -174,7 +174,7 @@ public class TN93 extends Observable {
         
                         current_pair++;
                         // There is some issue here when input has exactly 2 sequences
-                        if (current_pair % (pairs_count / 100) == 0 ) {
+                        if (pairs_count < 100 || current_pair % (pairs_count / 100) == 0 ) {
                             estimatedTime = System.nanoTime() - startTime;
                             int percCompleted = (int) (current_pair*100/pairs_count);
                             System.out.print(String.format("%d%% completed in ", percCompleted));
@@ -198,7 +198,7 @@ public class TN93 extends Observable {
             }
 
             current_pair++;
-            if (current_pair % (pairs_count / 100) == 0 || pairs_count < 100) {
+            if (pairs_count < 100 || current_pair % (pairs_count / 100) == 0) {
                 estimatedTime = System.nanoTime() - startTime;
                 int percCompleted = (int) (current_pair*100/pairs_count);
                 System.out.print(String.format("%d%% completed in ", percCompleted));
@@ -214,7 +214,6 @@ public class TN93 extends Observable {
         writerRef.get().close();
         setChanged();
         notifyObservers(100);
-        System.out.println("TESTTESTTESTTESTTESTTESTTESTTESTTESTTESTTEST");
         return;
     }
 

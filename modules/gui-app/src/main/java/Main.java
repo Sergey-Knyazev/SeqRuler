@@ -33,7 +33,7 @@ public class Main implements Runnable{
             description="Maximum allowable fraction of ambiguities allowed for 'resolve' mode. If exceeded, use 'average' mode.")
     private float max_ambiguity_fraction;
     @CommandLine.Option(names={"-c", "--cores"},
-            description="Number of cores to use for parallel processing.")
+            description="Number of cores to use for parallel processing.", defaultValue = "1")
     private int cores;
 
     public void run() {
