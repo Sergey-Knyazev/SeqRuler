@@ -43,3 +43,6 @@ target/
 
 *.out
 
+.vscode/
+cdc_python_tn93/
+

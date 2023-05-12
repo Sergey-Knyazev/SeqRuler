@@ -130,6 +130,7 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
         gapmmBut = new JRadioButton("Gapmm");
         skipBut = new JRadioButton("Skip");
 
+
         ambiguityHandlingGroup.add(resolveBut);
         ambiguityHandlingGroup.add(averageBut);
         ambiguityHandlingGroup.add(gapmmBut);
@@ -171,6 +172,10 @@ class TN93_Panel extends JPanel implements ActionListener, Observer {
 
         JPanel radioButtonsPanel = new JPanel();
         radioButtonsPanel.setLayout(new GridLayout(1, 4));
+        resolveBut.setToolTipText("Count any resolutions that match as a perfect match");
+        averageBut.setToolTipText("Average all possible resolutions");
+        gapmmBut.setToolTipText("Count character-gap sites as 4-way mismatches, otherwise Average.");
+        skipBut.setToolTipText("Skip all sites with gaps or ambiguities");
         radioButtonsPanel.add(resolveBut);
         radioButtonsPanel.add(averageBut);
         radioButtonsPanel.add(gapmmBut);
